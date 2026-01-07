@@ -40,9 +40,15 @@ class ModPolicy:
 
     def _load(self) -> None:
         try:
-            self.rules = json.loads(self.policy_path.read_text())
+            data = json.loads(self.policy_path.read_text())
+
+            # Strip schema metadata – not part of runtime rules
+            data.pop("$schema", None)
+
+            self.rules = data
         except Exception as e:
             raise PolicyError(f"Failed to load policy: {e}") from e
+
 
     def _validate(self) -> None:
         try:

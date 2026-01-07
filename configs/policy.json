@@ -2,7 +2,8 @@
   "$schema": "https://frank1o3.github.io/smithpy/schemas/policy.schema.json",
   "sodium": {
     "conflicts": [
-      "vulkan-mod"
+      "vulkanmod",
+      "vulkanmod-extra"
     ],
     "sub_mods": [
       "sodium-extra",
@@ -12,10 +13,44 @@
       "lambdynamiclights"
     ]
   },
-  "vulkan-mod": {
-    "conflicts": [
+  "podium": {
+    "sub_mods": [
       "sodium"
     ],
-    "sub_mods": []
+    "conflicts": [
+      "vulkanmod"
+    ]
+  },
+  "vulkanmod": {
+    "conflicts": [
+      "sodium",
+      "sodium-extra",
+      "sodium-dynamic-lights",
+      "reeses-sodium-options",
+      "immediatelyfast"
+    ],
+    "sub_mods": [
+      "vulkanmod-extra"
+    ]
+  },
+  "mod menu": {
+    "sub_mods": [
+      "yetanotherconfiglib",
+      "cloth-config-api"
+    ],
+    "conflicts": []
+  },
+  "fabric-api": {
+    "sub_mods": [
+      "fabric-language"
+    ],
+    "conflicts": []
+  },
+  "3d-skin-layers": {
+    "sub_mods": [
+      "not-enough-animations",
+      "wavey-capes"
+    ],
+    "conflicts": []
   }
 }
