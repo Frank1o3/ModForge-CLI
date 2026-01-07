@@ -6,7 +6,6 @@ the Modrinth API v2.
 ## Resources
 
 - [GitHub Repository](https://github.com/Frank1o3/smithpy)
-- [Schemas](./schemas/)
 - [Policy Schema](./schemas/policy.schema.yml)
 - [Modrinth API Schema](./schemas/modrinth_api.schema.yml)
 

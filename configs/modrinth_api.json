@@ -2,44 +2,44 @@
     "$schema": "https://frank1o3.github.io/smithpy/schemas/modrinth_api.schema.yml",
     "BASE_URL": "https://api.modrinth.com/v2",
     "ENDPOINTS": {
-        "search": "/search",
-        "projects": {
-            "project": "/project/{id}",
-            "project_versions": "/project/{id}/version",
-            "dependencies": "/project/{id}/dependencies",
-            "icon": "/project/{id}/icon",
-            "gallery": "/project/{id}/gallery",
-            "check_following": "/project/{id}/check_following"
-        },
-        "versions": {
-            "version": "/version/{id}",
-            "files": "/version/{id}/files",
-            "download": "/version/{id}/file/{filename}",
-            "file_by_hash": "/version_file/{hash}",
-            "versions_by_hash": "/version_file/{hash}/versions",
-            "latest_for_hash": "/version_file/{hash}/update?algorithm={algo}"
-        },
-        "tags": {
-            "categories": "/tag/category",
-            "loaders": "/tag/loader",
-            "game_versions": "/tag/game_version",
-            "licenses": "/tag/license",
-            "environments": "/tag/environment"
-        },
-        "teams": {
-            "team": "/team/{id}",
-            "members": "/team/{id}/members"
-        },
-        "user": {
-            "user": "/user/{id}",
-            "user_projects": "/user/{id}/projects",
-            "notifications": "/user/{id}/notifications",
-            "avatar": "/user/{id}/avatar"
-        },
         "bulk": {
             "projects": "/projects",
-            "versions": "/versions",
-            "version_files": "/version_files"
+            "version_files": "/version_files",
+            "versions": "/versions"
+        },
+        "projects": {
+            "check_following": "/project/{id}/check_following",
+            "dependencies": "/project/{id}/dependencies",
+            "gallery": "/project/{id}/gallery",
+            "icon": "/project/{id}/icon",
+            "project": "/project/{id}",
+            "project_versions": "/project/{id}/version"
+        },
+        "search": "/search",
+        "tags": {
+            "categories": "/tag/category",
+            "environments": "/tag/environment",
+            "game_versions": "/tag/game_version",
+            "licenses": "/tag/license",
+            "loaders": "/tag/loader"
+        },
+        "teams": {
+            "members": "/team/{id}/members",
+            "team": "/team/{id}"
+        },
+        "user": {
+            "avatar": "/user/{id}/avatar",
+            "notifications": "/user/{id}/notifications",
+            "user": "/user/{id}",
+            "user_projects": "/user/{id}/projects"
+        },
+        "versions": {
+            "download": "/version/{id}/file/{filename}",
+            "file_by_hash": "/version_file/{hash}",
+            "files": "/version/{id}/files",
+            "latest_for_hash": "/version_file/{hash}/update?algorithm={algo}",
+            "version": "/version/{id}",
+            "versions_by_hash": "/version_file/{hash}/versions"
         }
     }
 }
