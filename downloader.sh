@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 REPO="Frank1o3/smithpy"
-BRANCH="main"
-RAW="https://raw.githubusercontent.com/$REPO/$BRANCH"
+
+RAW_BASE="https://raw.githubusercontent.com/$REPO/main"
+RELEASE_BASE="https://github.com/$REPO/releases/latest/download"
 
 FILES=(
   "pyproject.toml"
@@ -11,27 +12,27 @@ FILES=(
   "LICENSE"
 )
 
-DIRS=(
-  "src"
-  "configs"
+ARCHIVES=(
+  "src.tar.gz"
+  "configs.tar.gz"
 )
 
-echo "Downloading SmithPy..."
+echo "Downloading SmithPy runtime files..."
 
-# files
+# --- fetch top-level files ---
 for file in "${FILES[@]}"; do
-  curl -fsSL "$RAW/$file" -o "$file"
+  echo "Downloading $file"
+  curl -fsSL "$RAW_BASE/$file" -o "$file"
 done
 
-# directories
-for dir in "${DIRS[@]}"; do
-  echo "Fetching $dir/"
-  curl -fsSL "$RAW/$dir.tar.gz" -o "$dir.tar.gz" || {
-    echo "Error: $dir archive not found"
-    exit 1
-  }
-  tar -xzf "$dir.tar.gz"
-  rm "$dir.tar.gz"
+# --- fetch and extract runtime archives ---
+for archive in "${ARCHIVES[@]}"; do
+  echo "Downloading $archive"
+  curl -fsSL "$RELEASE_BASE/$archive" -o "$archive"
+
+  echo "Extracting $archive"
+  tar -xzf "$archive"
+  rm -f "$archive"
 done
 
-echo "Done."
+echo "SmithPy downloaded successfully."
