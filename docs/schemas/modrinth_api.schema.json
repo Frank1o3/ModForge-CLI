@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://frank1o3.github.io/smithpy/schemas/policy.schema.yml",
+  "title": "Modrinth API Definition Schema",
+  "type": "object",
+  "required": [
+    "BASE_URL",
+    "ENDPOINTS"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "BASE_URL": {
+      "type": "string",
+      "format": "uri",
+      "description": "Base Modrinth API URL"
+    },
+    "ENDPOINTS": {
+      "type": "object",
+      "required": [
+        "search",
+        "projects",
+        "versions",
+        "tags",
+        "teams",
+        "user",
+        "bulk"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "search": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "projects": {
+          "$ref": "#/$defs/endpointGroup"
+        },
+        "versions": {
+          "$ref": "#/$defs/endpointGroup"
+        },
+        "tags": {
+          "$ref": "#/$defs/endpointGroup"
+        },
+        "teams": {
+          "$ref": "#/$defs/endpointGroup"
+        },
+        "user": {
+          "$ref": "#/$defs/endpointGroup"
+        },
+        "bulk": {
+          "$ref": "#/$defs/endpointGroup"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "endpointGroup": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^/"
+      }
+    }
+  }
+}

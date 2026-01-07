@@ -11,25 +11,13 @@ from urllib.parse import quote_plus
 
 
 class ModrinthAPIConfig:
-    """Singleton class that loads modrinth_api.json and builds URLs."""
-
-    _instance: Optional["ModrinthAPIConfig"] = None
-
-    def __new__(cls) -> "ModrinthAPIConfig":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
+    """Loads modrinth_api.json and builds Modrinth API URLs."""
 
     def __init__(self, config_path: str | Path = "modrinth_api.json"):
-        if self._initialized:
-            return
-
         self.config_path = Path(config_path)
         self.base_url: str = ""
         self.endpoints: Dict[str, Any] = {}
         self._load_config()
-        self._initialized = True
 
     def _load_config(self) -> None:
         if not self.config_path.exists():

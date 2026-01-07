@@ -25,7 +25,7 @@ class ModPolicy:
     """
 
     SCHEMA_URL = (
-        "https://frank1o3.github.io/smithpy/schemas/policy.schema.json"
+        "https://frank1o3.github.io/smithpy/schemas/policy.schema.yml"
     )
 
     def __init__(self, policy_path: Path):
