@@ -33,7 +33,7 @@ class ModrinthAPIConfig:
             raise ValueError("BASE_URL missing in modrinth_api.json")
 
         self.endpoints = data.get("ENDPOINTS", {})
-        if not isinstance(self.endpoints, dict):
+        if not isinstance(self.endpoints, Dict):
             raise ValueError("ENDPOINTS section is invalid")
 
     def build_url(self, template: str, **kwargs: str) -> str:
