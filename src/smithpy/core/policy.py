@@ -73,34 +73,41 @@ class ModPolicy:
         """
         Apply policy to a mod set.
         Recursively adds sub-mods and removes conflicts.
+        User-selected mods always take priority over sub-mods.
         """
-        active: Set[str] = set(mods)
-        
+        explicit: Set[str] = set(mods)
+        active: Set[str] = set(explicit)
+        implicit: Set[str] = set()
+
         # 1. Expand sub-mods recursively
-        # We use a queue to ensure we check the rules for every newly added mod
         to_process = list(active)
         while to_process:
-            current_mod = to_process.pop(0)
-            rule = self.rules.get(current_mod)
-            
-            if rule and "sub_mods" in rule:
-                for sub in rule["sub_mods"]:
-                    if sub not in active:
-                        active.add(sub)
-                        # Add the new mod to the queue so its own sub-mods are checked
-                        to_process.append(sub)
+            current = to_process.pop(0)
+            rule = self.rules.get(current)
+            if not rule:
+                continue
 
-        # 2. Remove conflicts
-        # After all possible mods are added, we filter out conflicts
-        final_mods = active.copy()
-        for mod in active:
+            for sub in rule["sub_mods"]:
+                if sub not in active:
+                    active.add(sub)
+                    implicit.add(sub)
+                    to_process.append(sub)
+
+        # 2. Remove conflicts (implicit mods lose first)
+        for mod in list(active):
             rule = self.rules.get(mod)
-            if rule and "conflicts" in rule:
-                for conflict in rule["conflicts"]:
-                    if conflict in final_mods:
-                        final_mods.remove(conflict)
+            if not rule:
+                continue
 
-        return final_mods
+            for conflict in rule["conflicts"]:
+                if conflict in active:
+                    # Only remove implicit mods
+                    if conflict in implicit:
+                        active.remove(conflict)
+                        implicit.discard(conflict)
+
+        return active
+
 
     def diff(self, mods: Iterable[str]) -> Dict[str, List[str]]:
         """
