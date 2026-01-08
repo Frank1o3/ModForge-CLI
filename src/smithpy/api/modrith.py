@@ -13,7 +13,7 @@ from urllib.parse import quote_plus
 class ModrinthAPIConfig:
     """Loads modrinth_api.json and builds Modrinth API URLs."""
 
-    def __init__(self, config_path: str | Path = "modrinth_api.json"):
+    def __init__(self, config_path: str | Path = "configs/modrinth_api.json"):
         self.config_path = Path(config_path)
         self.base_url: str = ""
         self.endpoints: Dict[str, Any] = {}

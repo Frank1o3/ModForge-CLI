@@ -1,5 +1,4 @@
 {
-    "python.envFile": "${workspaceFolder}/.env",
     "[python]": {
         "diffEditor.ignoreTrimWhitespace": false,
         "editor.defaultColorDecorators": "never",
@@ -8,5 +7,8 @@
         ],
         "editor.formatOnType": true,
         "editor.wordBasedSuggestions": "off"
-    }
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:poetry",
+    "python-envs.defaultPackageManager": "ms-python.python:poetry",
+    "python-envs.pythonProjects": []
 }

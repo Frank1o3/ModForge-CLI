@@ -1,8 +1,9 @@
 from typing import Iterable, List
 from dataclasses import dataclass
 
-from policy import ModPolicy
-from api import ModrinthAPIConfig
+from smithpy.core.policy import ModPolicy
+from smithpy.api import ModrinthAPIConfig
+
 
 @dataclass(frozen=True)
 class ResolvedMod:
@@ -11,6 +12,7 @@ class ResolvedMod:
     version_id: str
     download_url: str
     required: bool
+
 
 class ModResolver:
     def __init__(

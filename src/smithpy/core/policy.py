@@ -28,8 +28,8 @@ class ModPolicy:
         "https://frank1o3.github.io/smithpy/schemas/policy.schema.json"
     )
 
-    def __init__(self, policy_path: Path):
-        self.policy_path = policy_path
+    def __init__(self, policy_path: str | Path = "configs/policy.json"):
+        self.policy_path = Path(policy_path)
         self.rules: NormalizedPolicyRules = {}
 
         self._load()

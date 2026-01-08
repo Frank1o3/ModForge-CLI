@@ -40,3 +40,6 @@ dev = [
 
 [tool.poetry]
 package-mode = true
+
+[tool.poetry.scripts]
+smithpy = "smithpy.__main__:main"
