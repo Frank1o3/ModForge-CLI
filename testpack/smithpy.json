@@ -1,0 +1,8 @@
+{
+    "name": "testpack",
+    "minecraft": "1.21.6",
+    "loader": "fabric",
+    "mods": [],
+    "resourcepacks": [],
+    "shaderpacks": []
+}
