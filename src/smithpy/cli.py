@@ -4,12 +4,17 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+import aiohttp
+import asyncio
 from rich.console import Console
 from rich.table import Table
 from rich.prompt import Confirm
 from rich.panel import Panel
 from rich.text import Text
 from pyfiglet import figlet_format
+
+from smithpy.core import Manifest, SearchResult
+from smithpy.api import ModrinthAPIConfig
 
 # Import version info
 try:
@@ -24,10 +29,26 @@ app = typer.Typer(
 )
 console = Console()
 REGISTRY_PATH = Path.home() / ".config" / "smithpy" / "registry.json"
+api = ModrinthAPIConfig()
 
-def get_manifest(path: Path = Path.cwd()) -> Optional[dict[str, list[str]|str]]:
+# --- Async Helper ---
+async def get_api_session():
+    """Returns a session with the correct SmithPy headers."""
+    return aiohttp.ClientSession(
+        headers={"User-Agent": f"{__author__}/SmithPy/{__version__}"},
+        raise_for_status=True
+    )
+
+def get_manifest(path: Path = Path.cwd()) -> Optional[Manifest]:
     p = path / "smithpy.json"
-    return json.loads(p.read_text()) if p.exists() else None
+    if not p.exists():
+        return None
+    try:
+        return Manifest.model_validate_json(p.read_text())
+    except Exception as e:
+        console.print(e)
+        return None
+
 
 def render_banner():
     """Renders a high-quality stylized banner"""
@@ -88,18 +109,11 @@ def setup(name: str, mc: str = "1.21.1", loader: str = "fabric"):
     for folder in ["mods", "overrides/resourcepacks", "overrides/shaderpacks", "overrides/config", "versions"]:
         (pack_dir / folder).mkdir(parents=True,exist_ok=True)
 
-    manifest:dict[str, list[str]|str] = {
-        "name": name,
-        "minecraft": mc,
-        "loader": loader,
-        "mods": [],
-        "resourcepacks": [],
-        "shaderpacks": []
-    }
-    (pack_dir / "smithpy.json").write_text(json.dumps(manifest, indent=4))
+    manifest:Manifest = Manifest(name=name, minecraft=mc, loader=loader)
+    (pack_dir / "smithpy.json").write_text(manifest.model_dump_json(indent=4))
     
     # Register globally
-    registry = json.loads(REGISTRY_PATH.read_text()) if REGISTRY_PATH.exists() else {}
+    registry:dict[str, str] = json.loads(REGISTRY_PATH.read_text()) if REGISTRY_PATH.exists() else {}
     registry[name] = str(pack_dir.absolute())
     REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
     REGISTRY_PATH.write_text(json.dumps(registry, indent=4))
@@ -118,23 +132,66 @@ def setup(name: str, mc: str = "1.21.1", loader: str = "fabric"):
     (pack_dir / "modrinth.index.json").write_text(json.dumps(index_data, indent=2))
 
     console.print(f"🚀 Project [bold cyan]{name}[/bold cyan] ready at {pack_dir}", style="green")
-
 @app.command()
-def add(slug: str, type: str = "mod"):
-    """Add a project slug (a the slug would be the mod name in its url or in some cases just a lowercase version) to the manifest (mod/resourcepack/shaderpack)"""
-    manifest = get_manifest()
+def add(name: str, project_type: str = "mod", pack: str = "testpack"):
+    """Search and add a project to the manifest without overwriting existing data"""
+    # 1. Load Registry to find the correct folder
+    registry = json.loads(REGISTRY_PATH.read_text())
+    if pack not in registry:
+        console.print(f"[red]Error:[/red] Pack '{pack}' not found in registry.")
+        return
+        
+    pack_path = Path(registry[pack])
+    manifest_file = pack_path / "smithpy.json"
+
+    # 2. Validation: Ensure the file exists and is readable
+    manifest = get_manifest(pack_path)
     if not manifest:
-        console.print("[red]Error:[/red] No smithpy.json found here.")
+        console.print(f"[red]Error:[/red] Could not load manifest at {manifest_file}")
         return
 
-    key = f"{type}s" if not type.endswith('s') else type
-    if key in manifest:
-        if slug not in manifest[key]:
-            manifest[key].append(slug)
-            Path("smithpy.json").write_text(json.dumps(manifest, indent=4))
-            console.print(f"✅ Added {slug} to {key}")
-        else:
-            console.print(f"⚠️ {slug} already in list.")
+    async def perform_add():
+        async with await get_api_session() as session:
+            url = api.search( 
+                name, 
+                game_versions=[manifest.minecraft], 
+                loaders=[manifest.loader], 
+                project_type=project_type
+            )
+            
+            async with session.get(url) as response:
+                results = SearchResult.model_validate_json(await response.text())
+            
+            if not results or not results.hits:
+                console.print(f"❌ No {project_type} found for '{name}'")
+                return
+
+            # Match slug
+            target_hit = next((h for h in results.hits if h.slug == name), results.hits[0])
+            slug = target_hit.slug
+            
+            # 3. Modify the existing manifest object
+            target_list = {
+                "mod": manifest.mods,
+                "resourcepack": manifest.resourcepacks,
+                "shaderpack": manifest.shaderpacks
+            }.get(project_type, manifest.mods)
+
+            if slug not in target_list:
+                target_list.append(slug)
+                # 4. Write the UPDATED manifest back to the correct path
+                manifest_file.write_text(manifest.model_dump_json(indent=4))
+                console.print(f"Added [green]{slug}[/green] to {project_type}s")
+            else:
+                console.print(f"{slug} is already in the manifest.")
+
+    asyncio.run(perform_add())
+
+
+@app.command()
+def resolve():
+    ...
+
 
 @app.command()
 def build():
@@ -143,7 +200,7 @@ def build():
     if not manifest:
         return
     
-    console.print(f"🛠  Building [bold]{manifest['name']}[/bold]...", style="blue")
+    console.print(f"🛠  Building [bold]{manifest.name}[/bold]...", style="blue")
     
     # 1. Trigger your resolver.py logic here
     # 2. Trigger downloader.sh for the specific loader/MC version
@@ -158,7 +215,7 @@ def export():
     if not manifest:
         return
 
-    pack_name = manifest['name']
+    pack_name = manifest.name
     zip_name = f"{pack_name}.mrpack"
     
     console.print(f"📦 Exporting to {zip_name}...", style="yellow")
