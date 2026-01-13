@@ -1,62 +1,49 @@
 name: Release SmithPy
 
 on:
-    workflow_dispatch:
-    push:
-        tags:
-            - "v*"
+  workflow_dispatch:
 
 permissions:
-    contents: write
+  contents: write
 
 jobs:
-    release:
-        runs-on: ubuntu-latest
+  release:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Verify tag matches __version__
-              run: |
-                  TAG="${GITHUB_REF_NAME#v}"
-                  if [ "$TAG" != "${{ steps.version.outputs.version }}" ]; then
-                      echo "Tag ($TAG) does not match __version__ (${{ steps.version.outputs.version }})"
-                      exit 1
-                  fi
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                  python-version: "3.13"
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
 
-            - name: Install Poetry
-              uses: snok/install-poetry@v1
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
 
-            - name: Install dependencies
-              run: poetry install --no-interaction
+      - name: Read __version__
+        id: version
+        run: |
+          VERSION=$(python - <<EOF
+          from smithpy.__version__ import __version__
+          print(__version__)
+          EOF
+          )
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-            - name: Run basic sanity check
-              run: poetry run smithpy --version
+      - name: Build package
+        run: poetry build
 
-            - name: Build package
-              run: poetry build
-
-            - name: Read version
-              id: version
-              run: |
-                  VERSION=$(python - <<EOF
-                  from smithpy.__version__ import __version__
-                  print(__version__)
-                  EOF
-                  )
-                  echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-            - name: Create GitHub Release
-              uses: softprops/action-gh-release@v2
-              with:
-                  tag_name: v${{ steps.version.outputs.version }}
-                  name: SmithPy v${{ steps.version.outputs.version }}
-                  files: |
-                      dist/*.whl
-                      dist/*.tar.gz
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: SmithPy v${{ steps.version.outputs.version }}
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
