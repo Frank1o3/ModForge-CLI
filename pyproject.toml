@@ -1,7 +1,7 @@
 [project]
 name = "smithpy"
-dynamic = ["version"]
-description = ""
+version = "0.1.2-beta"
+description = "SmithPy — a Modrinth-based Minecraft modpack builder"
 authors = [
     {name = "Frank1o3",email = "jahdy1o3@gmail.com"}
 ]
@@ -40,6 +40,3 @@ package-mode = true
 
 [tool.poetry.scripts]
 smithpy = "smithpy.__main__:main"
-
-[tool.poetry.dynamic]
-version = { attr = "smithpy.__version__.__version__" }
