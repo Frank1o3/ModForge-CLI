@@ -26,11 +26,11 @@ except ImportError:
 
 app = typer.Typer(
     add_completion=False,
-    no_args_is_help=False, # We handle this manually in the callback for the banner
+    no_args_is_help=False,  # We handle this manually in the callback for the banner
 )
 console = Console()
 FABRIC_LOADER_VERSION = "0.18.3"
-CONFIG_PATH =  Path().home() / ".config" / "smithpy"
+CONFIG_PATH = Path().home() / ".config" / "smithpy"
 REGISTRY_PATH = CONFIG_PATH / "registry.json"
 MODRINTH_API = CONFIG_PATH / "modrinth_api.json"
 POLICY_PATH = CONFIG_PATH / "policy.json"
@@ -39,16 +39,53 @@ FABRIC_INSTALLER_URL = (
     "https://maven.fabricmc.net/net/fabricmc/"
     "fabric-installer/1.1.1/fabric-installer-1.1.1.jar"
 )
+DEFAULT_MODRINTH_API_URL = "https://raw.githubusercontent.com/Frank1o3/smithpy/refs/heads/main/configs/modrinth_api.json"
+
+DEFAULT_POLICY_URL = "https://raw.githubusercontent.com/Frank1o3/smithpy/refs/heads/main/configs/policy.json"
+
+
+def ensure_config_file(path: Path, url: str, label: str):
+    if path.exists():
+        return
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    console.print(f"[yellow]Missing {label} config.[/yellow] Downloading default…")
+
+    try:
+        import urllib.request
+
+        urllib.request.urlretrieve(url, path)
+        console.print(f"[green]✓ {label} config installed at {path}[/green]")
+    except Exception as e:
+        console.print(f"[red]Failed to download {label} config:[/red] {e}")
+        raise typer.Exit(1)
+
+
+ensure_config_file(
+    MODRINTH_API,
+    DEFAULT_MODRINTH_API_URL,
+    "Modrinth API",
+)
+
+ensure_config_file(
+    POLICY_PATH,
+    DEFAULT_POLICY_URL,
+    "Policy",
+)
+
 
 api = ModrinthAPIConfig(MODRINTH_API)
+
 
 # --- Async Helper ---
 async def get_api_session():
     """Returns a session with the correct SmithPy headers."""
     return aiohttp.ClientSession(
         headers={"User-Agent": f"{__author__}/SmithPy/{__version__}"},
-        raise_for_status=True
+        raise_for_status=True,
     )
+
 
 def get_manifest(path: Path = Path.cwd()) -> Optional[Manifest]:
     p = path / "smithpy.json"
@@ -59,6 +96,7 @@ def get_manifest(path: Path = Path.cwd()) -> Optional[Manifest]:
     except Exception as e:
         console.print(e)
         return None
+
 
 def install_fabric(
     installer: Path,
@@ -72,21 +110,25 @@ def install_fabric(
             "-jar",
             installer,
             "client",
-            "-mcversion", mc_version,
-            "-loader", loader_version,
-            "-dir", str(game_dir),
+            "-mcversion",
+            mc_version,
+            "-loader",
+            loader_version,
+            "-dir",
+            str(game_dir),
             "-noprofile",
         ],
         check=True,
     )
 
+
 def render_banner():
     """Renders a high-quality stylized banner"""
     ascii_art = figlet_format("SmithPy", font="slant")
-    
+
     # Create a colorful gradient-like effect for the text
     banner_text = Text(ascii_art, style="bold cyan")
-    
+
     # Add extra info line
     info_line = Text.assemble(
         (" ⛏  ", "yellow"),
@@ -95,19 +137,24 @@ def render_banner():
         ("Created by ", "italic white"),
         (f"{__author__}", "bold magenta"),
     )
-    
+
     # Wrap in a nice panel
-    console.print(Panel(
-        Text.assemble(banner_text, "\n", info_line),
-        border_style="blue",
-        padding=(1, 2),
-        expand=False
-    ))
+    console.print(
+        Panel(
+            Text.assemble(banner_text, "\n", info_line),
+            border_style="blue",
+            padding=(1, 2),
+            expand=False,
+        )
+    )
+
 
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
-    version: Optional[bool] = typer.Option(None, "--version", "-v", help="Show version and exit")
+    version: Optional[bool] = typer.Option(
+        None, "--version", "-v", help="Show version and exit"
+    ),
 ):
     """
     SmithPy: A powerful Minecraft modpack manager for Modrinth.
@@ -124,49 +171,60 @@ def main_callback(
         console.print("  [green]setup[/green]    Initialize a new modpack project")
         console.print("  [green]ls[/green]       List all registered projects")
         console.print("  [green]add[/green]      Add a mod/resource/shader to manifest")
-        console.print("  [green]build[/green]    Download files and setup loader version")
+        console.print(
+            "  [green]build[/green]    Download files and setup loader version"
+        )
         console.print("  [green]export[/green]   Create the final .mrpack zip")
-        
+
         console.print("\nRun [white]smithpy --help[/white] for full command details.\n")
+
 
 @app.command()
 def setup(name: str, mc: str = "1.21.1", loader: str = "fabric"):
     """Initialize the working directory for a new pack"""
     pack_dir = Path.cwd() / name
     pack_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Standard SmithPy structure (The Watermark)
-    for folder in ["mods", "overrides/resourcepacks", "overrides/shaderpacks", "overrides/config", "versions"]:
-        (pack_dir / folder).mkdir(parents=True,exist_ok=True)
 
-    manifest:Manifest = Manifest(name=name, minecraft=mc, loader=loader)
+    # Standard SmithPy structure (The Watermark)
+    for folder in [
+        "mods",
+        "overrides/resourcepacks",
+        "overrides/shaderpacks",
+        "overrides/config",
+        "versions",
+    ]:
+        (pack_dir / folder).mkdir(parents=True, exist_ok=True)
+
+    manifest: Manifest = Manifest(name=name, minecraft=mc, loader=loader)
     (pack_dir / "smithpy.json").write_text(manifest.model_dump_json(indent=4))
-    
+
     # Register globally
-    registry:dict[str, str] = json.loads(REGISTRY_PATH.read_text()) if REGISTRY_PATH.exists() else {}
+    registry: dict[str, str] = (
+        json.loads(REGISTRY_PATH.read_text()) if REGISTRY_PATH.exists() else {}
+    )
     registry[name] = str(pack_dir.absolute())
     REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
     REGISTRY_PATH.write_text(json.dumps(registry, indent=4))
-    
-    index_data:dict[str, dict[str, str]|list[str]|str|int] = {
+
+    index_data: dict[str, dict[str, str] | list[str] | str | int] = {
         "formatVersion": 1,
         "game": "minecraft",
         "versionId": "1.0.0",
         "name": name,
-        "dependencies": {
-            "minecraft": mc,
-            loader: "*"
-        },
-        "files": []
+        "dependencies": {"minecraft": mc, loader: "*"},
+        "files": [],
     }
     (pack_dir / "modrinth.index.json").write_text(json.dumps(index_data, indent=2))
 
-    console.print(f"Project [bold cyan]{name}[/bold cyan] ready at {pack_dir}", style="green")
+    console.print(
+        f"Project [bold cyan]{name}[/bold cyan] ready at {pack_dir}", style="green"
+    )
+
 
 @app.command()
 def add(name: str, project_type: str = "mod", pack_name: str = "testpack"):
     """Search and add a project to the manifest without overwriting existing data"""
-    
+
     # --- API LIMITATION CHECK ---
     if project_type in ["resourcepack", "shaderpack"]:
         console.print(
@@ -179,10 +237,10 @@ def add(name: str, project_type: str = "mod", pack_name: str = "testpack"):
     if pack_name not in registry:
         console.print(f"[red]Error:[/red] Pack '{pack_name}' not found in registry.")
         return
-        
+
     pack_path = Path(registry[pack_name])
     manifest_file = pack_path / "smithpy.json"
-    
+
     manifest = get_manifest(pack_path)
     if not manifest:
         console.print(f"[red]Error:[/red] Could not load manifest at {manifest_file}")
@@ -190,30 +248,32 @@ def add(name: str, project_type: str = "mod", pack_name: str = "testpack"):
 
     async def perform_add():
         async with await get_api_session() as session:
-            url = api.search( 
-                name, 
-                game_versions=[manifest.minecraft], 
-                loaders=[manifest.loader], 
-                project_type=project_type
+            url = api.search(
+                name,
+                game_versions=[manifest.minecraft],
+                loaders=[manifest.loader],
+                project_type=project_type,
             )
-            
+
             async with session.get(url) as response:
                 results = SearchResult.model_validate_json(await response.text())
-            
+
             if not results or not results.hits:
                 console.print(f"[red]No {project_type} found for '{name}'")
                 return
 
             # Match slug
-            target_hit = next((h for h in results.hits if h.slug == name), results.hits[0])
+            target_hit = next(
+                (h for h in results.hits if h.slug == name), results.hits[0]
+            )
             slug = target_hit.slug
-            
+
             # 3. Modify the existing manifest object
             # Only 'mod' will reach here currently due to the check above
             target_list = {
                 "mod": manifest.mods,
                 "resourcepack": manifest.resourcepacks,
-                "shaderpack": manifest.shaderpacks
+                "shaderpack": manifest.shaderpacks,
             }.get(project_type, manifest.mods)
 
             if slug not in target_list:
@@ -229,13 +289,13 @@ def add(name: str, project_type: str = "mod", pack_name: str = "testpack"):
 @app.command()
 def resolve(pack_name: str = "testpack"):
     from smithpy.core import ModPolicy, ModResolver
-    
+
     # 1. Load Registry and Manifest
     registry = json.loads(REGISTRY_PATH.read_text())
     if pack_name not in registry:
         console.print(f"[red]Error:[/red] Pack '{pack_name}' not found in registry.")
         return
-        
+
     pack_path = Path(registry[pack_name])
     manifest_file = pack_path / "smithpy.json"
 
@@ -243,29 +303,31 @@ def resolve(pack_name: str = "testpack"):
     if not manifest:
         console.print(f"[red]Error:[/red] Could not load manifest at {manifest_file}")
         return
-    
+
     # 2. Run Resolution Logic
-    console.print(f"Resolving dependencies for [bold cyan]{pack_name}[/bold cyan]...", style="yellow")
+    console.print(
+        f"Resolving dependencies for [bold cyan]{pack_name}[/bold cyan]...",
+        style="yellow",
+    )
     policy = ModPolicy(POLICY_PATH)
     resolver = ModResolver(
-        policy=policy, 
-        api=api, 
-        mc_version=manifest.minecraft, 
-        loader=manifest.loader
+        policy=policy, api=api, mc_version=manifest.minecraft, loader=manifest.loader
     )
-    
+
     # This returns a Set[str] of unique Modrinth Project IDs
     resolved_mods = resolver.resolve(manifest.mods)
-    
+
     # 3. Update Manifest with Resolved IDs
     # We convert the set to a sorted list for a clean JSON file
     manifest.mods = sorted(list(resolved_mods))
-    
+
     # 4. Save back to smithpy.json
     try:
         manifest_file.write_text(manifest.model_dump_json(indent=4))
         console.print(f"Successfully updated [bold]{manifest_file.name}[/bold]")
-        console.print(f"Total mods resolved: [bold green]{len(manifest.mods)}[/bold green]")
+        console.print(
+            f"Total mods resolved: [bold green]{len(manifest.mods)}[/bold green]"
+        )
     except Exception as e:
         console.print(f"[red]Error saving manifest:[/red] {e}")
 
@@ -276,18 +338,18 @@ def resolve(pack_name: str = "testpack"):
         for mod_id in manifest.mods:
             table.add_row(mod_id)
         console.print(table)
-    
+
 
 @app.command()
 def build(pack_name: str = "testpack"):
     """Download dependencies and set up the loader version"""
-    
+
     # 1. Load Registry and Manifest
     registry = json.loads(REGISTRY_PATH.read_text())
     if pack_name not in registry:
         console.print(f"[red]Error:[/red] Pack '{pack_name}' not found in registry.")
         return
-        
+
     pack_path = Path(registry[pack_name])
     manifest_file = pack_path / "smithpy.json"
 
@@ -321,16 +383,17 @@ def build(pack_name: str = "testpack"):
     asyncio.run(run())
     console.print("✨ Build complete. Mods downloaded and indexed.", style="green")
 
+
 @app.command()
 def export(pack_name: str = "testpack"):
     """Finalize and export the pack as a runnable .zip"""
-    
+
     # 1. Load Registry and Manifest
     registry = json.loads(REGISTRY_PATH.read_text())
     if pack_name not in registry:
         console.print(f"[red]Error:[/red] Pack '{pack_name}' not found in registry.")
         return
-        
+
     pack_path = Path(registry[pack_name])
     manifest_file = pack_path / "smithpy.json"
 
@@ -352,6 +415,7 @@ def export(pack_name: str = "testpack"):
         if not installer.exists():
             console.print("Downloading Fabric installer...")
             import urllib.request
+
             urllib.request.urlretrieve(FABRIC_INSTALLER_URL, installer)
 
         console.print("Installing Fabric...")
@@ -379,6 +443,7 @@ def export(pack_name: str = "testpack"):
     )
 
     console.print(f"✅ Exported {zip_path.name}", style="green bold")
+
 
 @app.command()
 def remove(pack_name: str):
@@ -437,15 +502,16 @@ def list_projects():
     if not REGISTRY_PATH.exists():
         console.print("No projects registered.")
         return
-    
+
     registry = json.loads(REGISTRY_PATH.read_text())
     table = Table(title="SmithPy Managed Packs", header_style="bold magenta")
     table.add_column("Pack Name", style="cyan")
     table.add_column("Location", style="dim")
-    
+
     for name, path in registry.items():
         table.add_row(name, path)
     console.print(table)
+
 
 def main():
     app()
