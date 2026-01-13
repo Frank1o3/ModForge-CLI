@@ -56,7 +56,7 @@ class ModPolicy:
     """
 
     def __init__(self, policy_path: str | Path = "configs/policy.json"):
-        self.policy_path = Path(policy_path)
+        self.policy_path = policy_path if isinstance(policy_path, Path) else Path(policy_path)
         self.rules: NormalizedPolicyRules = {}
         self.schema_ref: str | None = None
 

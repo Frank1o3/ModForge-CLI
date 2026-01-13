@@ -14,7 +14,7 @@ class ModrinthAPIConfig:
     """Loads modrinth_api.json and builds Modrinth API URLs."""
 
     def __init__(self, config_path: str | Path = "configs/modrinth_api.json"):
-        self.config_path = Path(config_path)
+        self.config_path = config_path if isinstance(config_path, Path) else Path(config_path)
         self.base_url: str = ""
         self.endpoints: Dict[str, Any] = {}
         self._load_config()

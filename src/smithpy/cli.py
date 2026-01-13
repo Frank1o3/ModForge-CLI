@@ -30,13 +30,17 @@ app = typer.Typer(
 )
 console = Console()
 FABRIC_LOADER_VERSION = "0.18.3"
-REGISTRY_PATH = Path.home() / ".config" / "smithpy" / "registry.json"
+CONFIG_PATH =  Path().home() / ".config" / "smithpy"
+REGISTRY_PATH = CONFIG_PATH / "registry.json"
+MODRINTH_API = CONFIG_PATH / "modrinth_api.json"
+POLICY_PATH = CONFIG_PATH / "policy.json"
+
 FABRIC_INSTALLER_URL = (
     "https://maven.fabricmc.net/net/fabricmc/"
     "fabric-installer/1.1.1/fabric-installer-1.1.1.jar"
 )
 
-api = ModrinthAPIConfig()
+api = ModrinthAPIConfig(MODRINTH_API)
 
 # --- Async Helper ---
 async def get_api_session():
@@ -242,7 +246,7 @@ def resolve(pack_name: str = "testpack"):
     
     # 2. Run Resolution Logic
     console.print(f"Resolving dependencies for [bold cyan]{pack_name}[/bold cyan]...", style="yellow")
-    policy = ModPolicy()
+    policy = ModPolicy(POLICY_PATH)
     resolver = ModResolver(
         policy=policy, 
         api=api, 

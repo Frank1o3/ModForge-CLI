@@ -16,3 +16,4 @@ $PYTHON -m pip install --upgrade \
 
 echo "SmithPy installed successfully."
 echo "Run: smithpy --help"
+
