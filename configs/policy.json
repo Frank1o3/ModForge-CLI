@@ -7,10 +7,8 @@
     ],
     "sub_mods": [
       "sodium-extra",
-      "sodium-dynamic-lights",
       "reeses-sodium-options",
-      "immediatelyfast",
-      "lambdynamiclights"
+      "immediatelyfast"
     ]
   },
   "podium": {
@@ -25,7 +23,6 @@
     "conflicts": [
       "sodium",
       "sodium-extra",
-      "sodium-dynamic-lights",
       "reeses-sodium-options",
       "immediatelyfast"
     ],

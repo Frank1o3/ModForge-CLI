@@ -1,24 +1,25 @@
+import asyncio
 import json
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Optional
 
-import typer
 import aiohttp
-import asyncio
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.text import Text
+import typer
 from pyfiglet import figlet_format
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Confirm
+from rich.table import Table
+from rich.text import Text
 
-from smithpy.core import Manifest, SearchResult, ModDownloader
 from smithpy.api import ModrinthAPIConfig
+from smithpy.core import Manifest, ModDownloader, SearchResult
 
 # Import version info
 try:
-    from smithpy.__version__ import __version__, __author__
+    from smithpy.__version__ import __author__, __version__
 except ImportError:
     __version__ = "unknown"
     __author__ = "Frank1o3"
@@ -223,7 +224,7 @@ def add(name: str, project_type: str = "mod", pack_name: str = "testpack"):
 
 @app.command()
 def resolve(pack_name: str = "testpack"):
-    from smithpy.core import ModResolver, ModPolicy
+    from smithpy.core import ModPolicy, ModResolver
     
     # 1. Load Registry and Manifest
     registry = json.loads(REGISTRY_PATH.read_text())
@@ -274,13 +275,24 @@ def resolve(pack_name: str = "testpack"):
     
 
 @app.command()
-def build():
+def build(pack_name: str = "testpack"):
     """Download dependencies and set up the loader version"""
-    manifest = get_manifest()
+    
+    # 1. Load Registry and Manifest
+    registry = json.loads(REGISTRY_PATH.read_text())
+    if pack_name not in registry:
+        console.print(f"[red]Error:[/red] Pack '{pack_name}' not found in registry.")
+        return
+        
+    pack_path = Path(registry[pack_name])
+    manifest_file = pack_path / "smithpy.json"
+
+    manifest = get_manifest(pack_path)
     if not manifest:
+        console.print(f"[red]Error:[/red] Could not load manifest at {manifest_file}")
         return
 
-    pack_root = Path.cwd()
+    pack_root = Path.cwd() / manifest.name
     mods_dir = pack_root / "mods"
     index_file = pack_root / "modrinth.index.json"
 
@@ -306,21 +318,32 @@ def build():
     console.print("✨ Build complete. Mods downloaded and indexed.", style="green")
 
 @app.command()
-def export():
+def export(pack_name: str = "testpack"):
     """Finalize and export the pack as a runnable .zip"""
-    manifest = get_manifest()
+    
+    # 1. Load Registry and Manifest
+    registry = json.loads(REGISTRY_PATH.read_text())
+    if pack_name not in registry:
+        console.print(f"[red]Error:[/red] Pack '{pack_name}' not found in registry.")
+        return
+        
+    pack_path = Path(registry[pack_name])
+    manifest_file = pack_path / "smithpy.json"
+
+    manifest = get_manifest(pack_path)
     if not manifest:
+        console.print(f"[red]Error:[/red] Could not load manifest at {manifest_file}")
         return
 
     console.print("📦 Finalizing pack...", style="cyan")
 
-    mods_dir = Path.cwd() / "mods"
+    mods_dir = Path.cwd() / manifest.name / "mods"
     if not mods_dir.exists() or not any(mods_dir.iterdir()):
         console.print("[red]No mods found. Run `smithpy build` first.[/red]")
         raise typer.Exit(1)
 
     if manifest.loader == "fabric":
-        installer = Path.cwd() / ".fabric-installer.jar"
+        installer = Path.cwd() / manifest.name / ".fabric-installer.jar"
 
         if not installer.exists():
             console.print("Downloading Fabric installer...")
@@ -332,10 +355,10 @@ def export():
             installer=installer,
             mc_version=manifest.minecraft,
             loader_version=FABRIC_LOADER_VERSION,
-            game_dir=Path.cwd(),
+            game_dir=Path.cwd() / manifest.name,
         )
 
-        index_file = Path.cwd() / "modrinth.index.json"
+        index_file = Path.cwd() / manifest.name / "modrinth.index.json"
         index = json.loads(index_file.read_text())
         index["dependencies"]["fabric-loader"] = FABRIC_LOADER_VERSION
         index_file.write_text(json.dumps(index, indent=2))
@@ -352,6 +375,56 @@ def export():
     )
 
     console.print(f"✅ Exported {zip_path.name}", style="green bold")
+
+@app.command()
+def remove(pack_name: str):
+    """Completely remove a modpack and unregister it"""
+    if not REGISTRY_PATH.exists():
+        console.print("[red]No registry found.[/red]")
+        raise typer.Exit(1)
+
+    registry = json.loads(REGISTRY_PATH.read_text())
+
+    if pack_name not in registry:
+        console.print(f"[red]Pack '{pack_name}' not found in registry.[/red]")
+        raise typer.Exit(1)
+
+    pack_path = Path(registry[pack_name])
+
+    console.print(
+        Panel.fit(
+            f"[bold red]This will permanently delete:[/bold red]\n\n"
+            f"[white]{pack_name}[/white]\n"
+            f"[dim]{pack_path}[/dim]",
+            title="⚠️  Destructive Action",
+            border_style="red",
+        )
+    )
+
+    if not Confirm.ask("Are you sure you want to continue?", default=False):
+        console.print("Aborted.", style="dim")
+        raise typer.Exit()
+
+    # Remove directory
+    try:
+        if pack_path.exists():
+            shutil.rmtree(pack_path)
+        else:
+            console.print(
+                f"[yellow]Warning:[/yellow] Pack directory does not exist: {pack_path}"
+            )
+    except Exception as e:
+        console.print(f"[red]Failed to delete pack directory:[/red] {e}")
+        raise typer.Exit(1)
+
+    # Update registry
+    del registry[pack_name]
+    REGISTRY_PATH.write_text(json.dumps(registry, indent=4))
+
+    console.print(
+        f"🗑️  Removed pack [bold cyan]{pack_name}[/bold cyan] successfully.",
+        style="green",
+    )
 
 
 @app.command(name="ls")
