@@ -28,9 +28,11 @@ jobs:
       - name: Read __version__
         id: version
         run: |
-          VERSION=$(python - <<EOF
-          from smithpy.__version__ import __version__
-          print(__version__)
+          VERSION=$(python - <<'EOF'
+          from pathlib import Path
+          ns = {}
+          exec(Path("smithpy/__version__.py").read_text(), ns)
+          print(ns["__version__"])
           EOF
           )
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
