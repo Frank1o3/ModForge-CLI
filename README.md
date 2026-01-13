@@ -18,9 +18,7 @@ When you run SmithPy, you'll be greeted with this colorful Minecraft-themed bann
 
 - **Modrinth API v2 Integration**: Search projects, list versions, fetch metadata in bulk.
 - **Modpack Management**: Read/validate `modrinth.index.json`, build packs from metadata.
-- **Secure Downloads**: Async (httpx) with hash verification, retries, and rich progress bars.
 - **Validation**: Full JSON Schema checks + optional Pydantic models for strict typing.
-- **Developer-Friendly**: Fully typed, modular code with Black/Ruff/Mypy config.
 
 ## Installation
 
