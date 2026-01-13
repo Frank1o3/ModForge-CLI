@@ -2,37 +2,29 @@
 set -euo pipefail
 
 REPO="Frank1o3/smithpy"
+PYTHON=${PYTHON:-python3}
 
-RAW_BASE="https://raw.githubusercontent.com/$REPO/main"
-RELEASE_BASE="https://github.com/$REPO/releases/latest/download"
+echo "Installing SmithPy..."
 
-FILES=(
-  "pyproject.toml"
-  "README.md"
-  "LICENSE"
+# Ensure pip
+$PYTHON -m ensurepip --upgrade || true
+
+# Get latest wheel URL
+WHEEL_URL=$(
+  curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" |
+  grep browser_download_url |
+  grep '\.whl"' |
+  cut -d '"' -f 4
 )
 
-ARCHIVES=(
-  "src.tar.gz"
-  "configs.tar.gz"
-)
+if [ -z "$WHEEL_URL" ]; then
+  echo "Failed to locate SmithPy wheel in latest release"
+  exit 1
+fi
 
-echo "Downloading SmithPy runtime files..."
+echo "Downloading $WHEEL_URL"
 
-# --- fetch top-level files ---
-for file in "${FILES[@]}"; do
-  echo "Downloading $file"
-  curl -fsSL "$RAW_BASE/$file" -o "$file"
-done
+$PYTHON -m pip install --upgrade "$WHEEL_URL"
 
-# --- fetch and extract runtime archives ---
-for archive in "${ARCHIVES[@]}"; do
-  echo "Downloading $archive"
-  curl -fsSL "$RELEASE_BASE/$archive" -o "$archive"
-
-  echo "Extracting $archive"
-  tar -xzf "$archive"
-  rm -f "$archive"
-done
-
-echo "SmithPy downloaded successfully."
+echo "SmithPy installed successfully."
+echo "Run: smithpy --help"
