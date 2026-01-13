@@ -10,6 +10,7 @@ class Manifest(BaseModel):
     name: str
     minecraft: str
     loader: str
+    loader_version: str | None = None
     mods: List[str] = Field(default_factory=list)
     resourcepacks: List[str] = Field(default_factory=list)
     shaderpacks: List[str] = Field(default_factory=list)

@@ -2,6 +2,7 @@ import asyncio
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -122,6 +123,30 @@ def install_fabric(
     )
 
 
+def detect_install_method() -> str:
+    prefix = Path(sys.prefix)
+
+    if "pipx" in prefix.parts:
+        return "pipx"
+    return "pip"
+
+def self_update():
+    method = detect_install_method()
+
+    if method == "pipx":
+        console.print("[cyan]Updating SmithPy using pipx...[/cyan]")
+        subprocess.run(["pipx", "upgrade", "smithpy"], check=True)
+
+    else:
+        console.print("[cyan]Updating SmithPy using pip...[/cyan]")
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "smithpy"],
+            check=True,
+        )
+
+    console.print("[green]SmithPy updated successfully.[/green]")
+
+
 def render_banner():
     """Renders a high-quality stylized banner"""
     ascii_art = figlet_format("SmithPy", font="slant")
@@ -180,10 +205,11 @@ def main_callback(
 
 
 @app.command()
-def setup(name: str, mc: str = "1.21.1", loader: str = "fabric"):
+def setup(name: str, mc: str = "1.21.1", loader: str = "fabric", loader_version: str = FABRIC_LOADER_VERSION):
     """Initialize the working directory for a new pack"""
     pack_dir = Path.cwd() / name
     pack_dir.mkdir(parents=True, exist_ok=True)
+
 
     # Standard SmithPy structure (The Watermark)
     for folder in [
@@ -195,7 +221,7 @@ def setup(name: str, mc: str = "1.21.1", loader: str = "fabric"):
     ]:
         (pack_dir / folder).mkdir(parents=True, exist_ok=True)
 
-    manifest: Manifest = Manifest(name=name, minecraft=mc, loader=loader)
+    manifest: Manifest = Manifest(name=name, minecraft=mc, loader=loader, loader_version=loader_version)
     (pack_dir / "smithpy.json").write_text(manifest.model_dump_json(indent=4))
 
     # Register globally
@@ -213,6 +239,7 @@ def setup(name: str, mc: str = "1.21.1", loader: str = "fabric"):
         "name": name,
         "dependencies": {"minecraft": mc, loader: "*"},
         "files": [],
+        
     }
     (pack_dir / "modrinth.index.json").write_text(json.dumps(index_data, indent=2))
 
@@ -401,6 +428,7 @@ def export(pack_name: str = "testpack"):
     if not manifest:
         console.print(f"[red]Error:[/red] Could not load manifest at {manifest_file}")
         return
+    loader_version = manifest.loader_version or FABRIC_LOADER_VERSION
 
     console.print("📦 Finalizing pack...", style="cyan")
 
@@ -422,7 +450,7 @@ def export(pack_name: str = "testpack"):
         install_fabric(
             installer=installer,
             mc_version=manifest.minecraft,
-            loader_version=FABRIC_LOADER_VERSION,
+            loader_version=loader_version,
             game_dir=Path.cwd() / manifest.name,
         )
 
@@ -511,6 +539,16 @@ def list_projects():
     for name, path in registry.items():
         table.add_row(name, path)
     console.print(table)
+
+@app.command()
+def self_update_cmd():
+    """
+    Update SmithPy to the latest version.
+    """
+    try:
+        self_update()
+    except subprocess.CalledProcessError:
+        raise typer.Exit(code=1)
 
 
 def main():
