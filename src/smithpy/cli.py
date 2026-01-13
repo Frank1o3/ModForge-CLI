@@ -1,5 +1,6 @@
 import json
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Optional
 
@@ -8,12 +9,11 @@ import aiohttp
 import asyncio
 from rich.console import Console
 from rich.table import Table
-from rich.prompt import Confirm
 from rich.panel import Panel
 from rich.text import Text
 from pyfiglet import figlet_format
 
-from smithpy.core import Manifest, SearchResult
+from smithpy.core import Manifest, SearchResult, ModDownloader
 from smithpy.api import ModrinthAPIConfig
 
 # Import version info
@@ -28,7 +28,13 @@ app = typer.Typer(
     no_args_is_help=False, # We handle this manually in the callback for the banner
 )
 console = Console()
+FABRIC_LOADER_VERSION = "0.18.3"
 REGISTRY_PATH = Path.home() / ".config" / "smithpy" / "registry.json"
+FABRIC_INSTALLER_URL = (
+    "https://maven.fabricmc.net/net/fabricmc/"
+    "fabric-installer/1.1.1/fabric-installer-1.1.1.jar"
+)
+
 api = ModrinthAPIConfig()
 
 # --- Async Helper ---
@@ -49,6 +55,25 @@ def get_manifest(path: Path = Path.cwd()) -> Optional[Manifest]:
         console.print(e)
         return None
 
+def install_fabric(
+    installer: Path,
+    mc_version: str,
+    loader_version: str,
+    game_dir: Path,
+):
+    subprocess.run(
+        [
+            "java",
+            "-jar",
+            installer,
+            "client",
+            "-mcversion", mc_version,
+            "-loader", loader_version,
+            "-dir", str(game_dir),
+            "-noprofile",
+        ],
+        check=True,
+    )
 
 def render_banner():
     """Renders a high-quality stylized banner"""
@@ -254,37 +279,80 @@ def build():
     manifest = get_manifest()
     if not manifest:
         return
-    
-    console.print(f"🛠  Building [bold]{manifest.name}[/bold]...", style="blue")
-    
-    # 1. Trigger your resolver.py logic here
-    # 2. Trigger downloader.sh for the specific loader/MC version
-    # 3. Output into the /versions folder so launchers detect it
-    
-    console.print("✨ Build complete. Files are staged in the project folders.", style="green")
+
+    pack_root = Path.cwd()
+    mods_dir = pack_root / "mods"
+    index_file = pack_root / "modrinth.index.json"
+
+    mods_dir.mkdir(exist_ok=True)
+
+    async def run():
+        async with aiohttp.ClientSession(
+            headers={"User-Agent": f"{__author__}/SmithPy/{__version__}"},
+            raise_for_status=True,
+        ) as session:
+            downloader = ModDownloader(
+                api=api,
+                mc_version=manifest.minecraft,
+                loader=manifest.loader,
+                output_dir=mods_dir,
+                index_file=index_file,
+                session=session,
+            )
+            await downloader.download_all(manifest.mods)
+
+    console.print(f"🛠  Building [bold cyan]{manifest.name}[/bold cyan]...")
+    asyncio.run(run())
+    console.print("✨ Build complete. Mods downloaded and indexed.", style="green")
 
 @app.command()
 def export():
-    """Compress the project into a .mrpack and optionally cleanup"""
+    """Finalize and export the pack as a runnable .zip"""
     manifest = get_manifest()
     if not manifest:
         return
 
-    pack_name = manifest.name
-    zip_name = f"{pack_name}.mrpack"
-    
-    console.print(f"Exporting to {zip_name}...", style="yellow")
-    
-    # Create the zip from the current directory
-    shutil.make_archive(pack_name, 'zip', Path.cwd())
-    Path(f"{pack_name}.zip").rename(zip_name)
-    
-    console.print(f"Exported {zip_name} successfully!", style="green bold")
+    console.print("📦 Finalizing pack...", style="cyan")
 
-    # Optional Cleanup
-    if Confirm.ask("Do you want to delete the source project directory?"):
-        shutil.rmtree(Path.cwd())
-        console.print("Project directory removed.", style="dim")
+    mods_dir = Path.cwd() / "mods"
+    if not mods_dir.exists() or not any(mods_dir.iterdir()):
+        console.print("[red]No mods found. Run `smithpy build` first.[/red]")
+        raise typer.Exit(1)
+
+    if manifest.loader == "fabric":
+        installer = Path.cwd() / ".fabric-installer.jar"
+
+        if not installer.exists():
+            console.print("Downloading Fabric installer...")
+            import urllib.request
+            urllib.request.urlretrieve(FABRIC_INSTALLER_URL, installer)
+
+        console.print("Installing Fabric...")
+        install_fabric(
+            installer=installer,
+            mc_version=manifest.minecraft,
+            loader_version=FABRIC_LOADER_VERSION,
+            game_dir=Path.cwd(),
+        )
+
+        index_file = Path.cwd() / "modrinth.index.json"
+        index = json.loads(index_file.read_text())
+        index["dependencies"]["fabric-loader"] = FABRIC_LOADER_VERSION
+        index_file.write_text(json.dumps(index, indent=2))
+
+        installer.unlink(missing_ok=True)
+
+    pack_name = manifest.name
+    zip_path = Path.cwd().parent / f"{pack_name}.zip"
+
+    shutil.make_archive(
+        base_name=str(zip_path.with_suffix("")),
+        format="zip",
+        root_dir=Path.cwd(),
+    )
+
+    console.print(f"✅ Exported {zip_path.name}", style="green bold")
+
 
 @app.command(name="ls")
 def list_projects():

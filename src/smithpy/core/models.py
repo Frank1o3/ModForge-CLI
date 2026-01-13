@@ -1,6 +1,7 @@
 from typing import List, Dict, Literal
 from pydantic import BaseModel, Field, TypeAdapter
 
+
 class BaseAPIModel(BaseModel):
     model_config = {"extra": "ignore"}
 
@@ -27,7 +28,9 @@ class SearchResult(BaseAPIModel):
 
 
 class Dependency(BaseAPIModel):
-    dependency_type: Literal["required", "optional", "incompatible", "embedded"] | None = None
+    dependency_type: (
+        Literal["required", "optional", "incompatible", "embedded"] | None
+    ) = None
     file_name: str | None = None
     project_id: str | None = None
     version_id: str | None = None
@@ -52,11 +55,17 @@ class ProjectVersion(BaseAPIModel):
     files: List[File] = Field(default_factory=list)
     game_versions: List[str] = Field(default_factory=list)
     loaders: List[str] = Field(default_factory=list)
-    
+
     @property
     def is_release(self) -> bool:
         return self.version_type == "release"
 
 
-
 ProjectVersionList = TypeAdapter(List[ProjectVersion])
+
+__all__ = [
+    "Manifest",
+    "SearchResult",
+    "ProjectVersion",
+    "ProjectVersionList",
+]
