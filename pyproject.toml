@@ -1,6 +1,6 @@
 [project]
 name = "smithpy"
-version = "0.1.4"
+version = "0.1.5"
 description = "SmithPy — a Modrinth-based Minecraft modpack builder"
 authors = [
     {name = "Frank1o3",email = "jahdy1o3@gmail.com"}
