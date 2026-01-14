@@ -53,4 +53,5 @@ package-mode = true
 smithpy = "smithpy.__main__:main"
 
 [project.urls]
+Homepage = "frank1o3.github.io/smithpy/"
 Repository = "https://github.com/Frank1o3/smithpy"
