@@ -1,3 +1,21 @@
 title: SmithPy
-description: CLI tooling for Modrinth-powered Minecraft modpacks
-theme: minima
+description: "A modern CLI for building and managing Minecraft modpacks"
+url: "[https://frank1o3.github.io](https://frank1o3.github.io)"
+baseurl: "/smithpy"
+
+remote_theme: just-the-docs/just-the-docs
+
+color_scheme: dark
+
+logo: "/assets/logo.png"
+favicon_ico: "/assets/favicon.ico"
+
+aux_links:
+"GitHub Repository":
+- "[https://github.com/Frank1o3/smithpy](https://github.com/Frank1o3/smithpy)"
+
+nav_enabled: true
+search_enabled: true
+heading_anchors: true
+
+footer_content: "SmithPy © 2026 Frank1o3 · MIT Licensed"
