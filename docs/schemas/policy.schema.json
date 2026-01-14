@@ -1,37 +1,41 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://frank1o3.github.io/smithpy/schemas/policy.schema.json",
-  "title": "SmithPy Mod Policy Schema",
-  "description": "Defines mod conflict and dependency rules for SmithPy",
+  "$id": "https://frank1o3.github.io/ModForge-Cli/schemas/policy.schema.json",
+  "title": "ModForge-Cli Mod Policy Schema",
+  "description": "Defines mod conflict and dependency rules for ModForge-Cli",
   "type": "object",
-
   "properties": {
     "$schema": {
       "type": "string",
       "format": "uri"
     }
   },
-
   "additionalProperties": {
     "type": "object",
-    "required": ["conflicts", "sub_mods"],
+    "required": [
+      "conflicts",
+      "sub_mods"
+    ],
     "properties": {
       "conflicts": {
         "type": "array",
-        "items": { "$ref": "#/$defs/modId" },
+        "items": {
+          "$ref": "#/$defs/modId"
+        },
         "uniqueItems": true,
         "default": []
       },
       "sub_mods": {
         "type": "array",
-        "items": { "$ref": "#/$defs/modId" },
+        "items": {
+          "$ref": "#/$defs/modId"
+        },
         "uniqueItems": true,
         "default": []
       }
     },
     "additionalProperties": false
   },
-
   "$defs": {
     "modId": {
       "type": "string",

@@ -5,9 +5,9 @@ nav_order: 1
 has_children: true
 ---
 
-# SmithPy ⛏
+# ModForge-Cli ⛏
 
-**SmithPy** is a modern, opinionated CLI tool for building, validating, and managing **Minecraft modpacks** using the **Modrinth API v2**.
+**ModForge-Cli** is a modern, opinionated CLI tool for building, validating, and managing **Minecraft modpacks** using the **Modrinth API v2**.
 
 It focuses on **deterministic mod resolution**, **policy‑based dependency handling**, and **schema‑driven configuration**.
 
@@ -28,13 +28,13 @@ It focuses on **deterministic mod resolution**, **policy‑based dependency hand
 Recommended (via PyPI):
 
 ```bash
-pipx install smithpy
+pipx install ModForge-Cli
 ```
 
 Alternative (virtualenv):
 
 ```bash
-pip install smithpy
+pip install ModForge-Cli
 ```
 
 ---
@@ -49,15 +49,15 @@ pip install smithpy
 
 ## 🔗 Links
 
-* 💻 [GitHub Repository](https://github.com/Frank1o3/smithpy)
-* 🐞 [Issue Tracker](https://github.com/Frank1o3/smithpy/issues)
-* 📦 [PyPI Project](https://pypi.org/project/smithpy)
+* 💻 [GitHub Repository](https://github.com/Frank1o3/ModForge-Cli)
+* 🐞 [Issue Tracker](https://github.com/Frank1o3/ModForge-Cli/issues)
+* 📦 [PyPI Project](https://pypi.org/project/ModForge-Cli)
 
 ---
 
 ## 🧪 Project Status
 
-SmithPy is **actively developed**.
+ModForge-Cli is **actively developed**.
 
 APIs and schemas are considered **stable**, while higher‑level CLI features continue to evolve.
 

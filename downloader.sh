@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="Frank1o3/smithpy"
+REPO="Frank1o3/ModForge-Cli"
 PYTHON=${PYTHON:-python3}
 OS="$(uname -s)"
 
-echo "Installing SmithPy..."
+echo "Installing ModForge-Cli..."
 
 # Resolve latest wheel URL
 WHEEL_URL="$(
@@ -16,7 +16,7 @@ WHEEL_URL="$(
 )"
 
 if [[ -z "$WHEEL_URL" ]]; then
-  echo "Failed to locate SmithPy wheel in latest release."
+  echo "Failed to locate ModForge-Cli wheel in latest release."
   exit 1
 fi
 
@@ -63,5 +63,5 @@ case "$OS" in
 esac
 
 echo
-echo "SmithPy installed successfully."
-echo "Run: smithpy --help"
+echo "ModForge-Cli installed successfully."
+echo "Run: ModForge-Cli --help"

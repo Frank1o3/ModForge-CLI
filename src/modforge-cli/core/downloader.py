@@ -10,7 +10,7 @@ import aiohttp
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 
-from smithpy.api import ModrinthAPIConfig
+from ModForge-Cli.api import ModrinthAPIConfig
 
 console = Console()
 

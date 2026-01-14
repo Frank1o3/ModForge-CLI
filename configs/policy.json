@@ -1,5 +1,5 @@
 {
-  "$schema": "https://frank1o3.github.io/smithpy/schemas/policy.schema.json",
+  "$schema": "https://frank1o3.github.io/ModForge-Cli/schemas/policy.schema.json",
   "sodium": {
     "conflicts": [
       "vulkanmod",

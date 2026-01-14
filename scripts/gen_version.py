@@ -3,7 +3,8 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = ROOT / "pyproject.toml"
-OUT = ROOT / "src/smithpy/__version__.py"
+OUT = ROOT / "src/ModForge-Cli/__version__.py"
+
 
 def main() -> None:
     data = tomllib.loads(PYPROJECT.read_text())
@@ -19,6 +20,7 @@ __author__ = "Frank1o3"
     )
 
     print(f"Generated {OUT.relative_to(ROOT)} ({version})")
+
 
 if __name__ == "__main__":
     main()

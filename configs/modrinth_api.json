@@ -1,5 +1,5 @@
 {
-    "$schema": "https://frank1o3.github.io/smithpy/schemas/modrinth_api.schema.json",
+    "$schema": "https://frank1o3.github.io/ModForge-Cli/schemas/modrinth_api.schema.json",
     "BASE_URL": "https://api.modrinth.com/v2",
     "ENDPOINTS": {
         "bulk": {

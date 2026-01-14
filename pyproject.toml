@@ -1,11 +1,9 @@
 [project]
-name = "smithpy"
+name = "modforge-cli"
 version = "0.1.5"
-description = "SmithPy — a Modrinth-based Minecraft modpack builder"
-authors = [
-    {name = "Frank1o3",email = "jahdy1o3@gmail.com"}
-]
-license = {text = "MIT"}
+description = "ModForge-Cli — a Modrinth-based Minecraft modpack builder"
+authors = [{ name = "Frank1o3", email = "jahdy1o3@gmail.com" }]
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 dependencies = [
@@ -17,7 +15,7 @@ dependencies = [
     "rich (>=14.2.0,<15.0.0)",
     "aiohttp (>=3.13.3,<4.0.0)",
     "pyfiglet (>=1.0.4,<2.0.0)",
-    "typer (>=0.21.1,<0.22.0)"
+    "typer (>=0.21.1,<0.22.0)",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -29,7 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Topic :: Software Development :: Build Tools"
+    "Topic :: Software Development :: Build Tools",
 ]
 
 [build-system]
@@ -43,15 +41,15 @@ dev = [
     "types-tqdm (>=4.67.0.20250809,<5.0.0.0)",
     "ruff (>=0.14.8,<0.15.0)",
     "mypy (>=1.19.0,<2.0.0)",
-    "types-colorama (>=0.4.15.20250801,<0.5.0.0)"
+    "types-colorama (>=0.4.15.20250801,<0.5.0.0)",
 ]
 
 [tool.poetry]
 package-mode = true
 
 [tool.poetry.scripts]
-smithpy = "smithpy.__main__:main"
+ModForge-Cli = "ModForge-Cli.__main__:main"
 
 [project.urls]
-Homepage = "https://frank1o3.github.io/smithpy/"
-Repository = "https://github.com/Frank1o3/smithpy"
+Homepage = "https://frank1o3.github.io/ModForge-Cli/"
+Repository = "https://github.com/Frank1o3/ModForge-Cli"

@@ -1,10 +1,10 @@
-# SmithPy ⛏
+# ModForge-Cli ⛏
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/)
 [![MIT License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Modrinth API v2](https://img.shields.io/badge/Modrinth-API%20v2-orange)](https://docs.modrinth.com/api-spec)
 
-**SmithPy** is a powerful CLI tool for building and managing custom Minecraft modpacks using the Modrinth API v2.
+**ModForge-Cli** is a powerful CLI tool for building and managing custom Minecraft modpacks using the Modrinth API v2.
 
 Search for projects, fetch versions, validate manifests, download mods with hash checks, and generate complete files — all from the terminal.
 
@@ -12,7 +12,7 @@ Ideal for modpack developers, server admins, and automation scripts.
 
 ## Terminal Banner
 
-When you run SmithPy, you'll be greeted with this colorful Minecraft-themed banner
+When you run ModForge-Cli, you'll be greeted with this colorful Minecraft-themed banner
 
 ## Key Features
 

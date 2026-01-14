@@ -7,7 +7,7 @@ nav_order: 2
 
 # Schemas
 
-SmithPy is built around **schema‑driven configuration**. These schemas define how the CLI interprets policies, resolves dependencies, and interacts with external APIs.
+ModForge-Cli is built around **schema‑driven configuration**. These schemas define how the CLI interprets policies, resolves dependencies, and interacts with external APIs.
 
 ---
 
@@ -38,7 +38,7 @@ Defines:
 * Request and response shapes
 * Version and loader mappings
 
-This allows SmithPy to validate API interactions at runtime and during development.
+This allows ModForge-Cli to validate API interactions at runtime and during development.
 
 ➡️ [View Modrinth API Schema](./schemas/modrinth_api.schema.json)
 
@@ -53,4 +53,4 @@ Schemas provide:
 * IDE auto‑completion
 * Long‑term stability
 
-They are a core design principle of SmithPy.
+They are a core design principle of ModForge-Cli.

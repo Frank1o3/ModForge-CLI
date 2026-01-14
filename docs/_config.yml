@@ -1,7 +1,7 @@
-title: SmithPy
+title: ModForge-Cli
 description: "A modern CLI for building and managing Minecraft modpacks"
 url: "https://frank1o3.github.io"
-baseurl: "/smithpy"
+baseurl: "/ModForge-Cli"
 
 remote_theme: just-the-docs/just-the-docs
 
@@ -11,10 +11,10 @@ logo: "/assets/logo.png"
 favicon_ico: "/assets/favicon.ico"
 
 aux_links:
-  "GitHub Repository": "https://github.com/Frank1o3/smithpy"
+  "GitHub Repository": "https://github.com/Frank1o3/ModForge-Cli"
 
 nav_enabled: true
 search_enabled: true
 heading_anchors: true
 
-footer_content: "SmithPy © 2026 Frank1o3 · MIT Licensed"
+footer_content: "ModForge-Cli © 2026 Frank1o3 · MIT Licensed"

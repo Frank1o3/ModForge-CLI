@@ -1,108 +1,194 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://frank1o3.github.io/smithpy/schemas/modrinth_api.schema.json",
-  "title": "SmithPy Modrinth API Config Schema",
+  "$id": "https://frank1o3.github.io/ModForge-Cli/schemas/modrinth_api.schema.json",
+  "title": "ModForge-Cli Modrinth API Config Schema",
   "description": "Schema for Modrinth API endpoint configuration",
   "type": "object",
-
-  "required": ["BASE_URL", "ENDPOINTS"],
-
+  "required": [
+    "BASE_URL",
+    "ENDPOINTS"
+  ],
   "properties": {
     "$schema": {
       "type": "string",
       "format": "uri"
     },
-
     "BASE_URL": {
       "type": "string",
       "format": "uri",
       "pattern": "^https://",
       "description": "Base Modrinth API URL"
     },
-
     "ENDPOINTS": {
       "type": "object",
-      "required": ["search", "projects", "versions", "tags", "teams", "user", "bulk"],
+      "required": [
+        "search",
+        "projects",
+        "versions",
+        "tags",
+        "teams",
+        "user",
+        "bulk"
+      ],
       "properties": {
-        "search": { "type": "string" },
-
+        "search": {
+          "type": "string"
+        },
         "projects": {
           "type": "object",
-          "required": ["project", "project_versions", "dependencies", "gallery", "icon", "check_following"],
+          "required": [
+            "project",
+            "project_versions",
+            "dependencies",
+            "gallery",
+            "icon",
+            "check_following"
+          ],
           "additionalProperties": false,
           "properties": {
-            "project": { "type": "string" },
-            "project_versions": { "type": "string" },
-            "dependencies": { "type": "string" },
-            "gallery": { "type": "string" },
-            "icon": { "type": "string" },
-            "check_following": { "type": "string" }
+            "project": {
+              "type": "string"
+            },
+            "project_versions": {
+              "type": "string"
+            },
+            "dependencies": {
+              "type": "string"
+            },
+            "gallery": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "check_following": {
+              "type": "string"
+            }
           }
         },
-
         "versions": {
           "type": "object",
-          "required": ["version", "files", "download", "file_by_hash", "versions_by_hash", "latest_for_hash"],
+          "required": [
+            "version",
+            "files",
+            "download",
+            "file_by_hash",
+            "versions_by_hash",
+            "latest_for_hash"
+          ],
           "additionalProperties": false,
           "properties": {
-            "version": { "type": "string" },
-            "files": { "type": "string" },
-            "download": { "type": "string" },
-            "file_by_hash": { "type": "string" },
-            "versions_by_hash": { "type": "string" },
-            "latest_for_hash": { "type": "string" }
+            "version": {
+              "type": "string"
+            },
+            "files": {
+              "type": "string"
+            },
+            "download": {
+              "type": "string"
+            },
+            "file_by_hash": {
+              "type": "string"
+            },
+            "versions_by_hash": {
+              "type": "string"
+            },
+            "latest_for_hash": {
+              "type": "string"
+            }
           }
         },
-
         "tags": {
           "type": "object",
-          "required": ["categories", "loaders", "game_versions", "licenses", "environments"],
+          "required": [
+            "categories",
+            "loaders",
+            "game_versions",
+            "licenses",
+            "environments"
+          ],
           "additionalProperties": false,
           "properties": {
-            "categories": { "type": "string" },
-            "loaders": { "type": "string" },
-            "game_versions": { "type": "string" },
-            "licenses": { "type": "string" },
-            "environments": { "type": "string" }
+            "categories": {
+              "type": "string"
+            },
+            "loaders": {
+              "type": "string"
+            },
+            "game_versions": {
+              "type": "string"
+            },
+            "licenses": {
+              "type": "string"
+            },
+            "environments": {
+              "type": "string"
+            }
           }
         },
-
         "teams": {
           "type": "object",
-          "required": ["team", "members"],
+          "required": [
+            "team",
+            "members"
+          ],
           "additionalProperties": false,
           "properties": {
-            "team": { "type": "string" },
-            "members": { "type": "string" }
+            "team": {
+              "type": "string"
+            },
+            "members": {
+              "type": "string"
+            }
           }
         },
-
         "user": {
           "type": "object",
-          "required": ["user", "user_projects", "notifications", "avatar"],
+          "required": [
+            "user",
+            "user_projects",
+            "notifications",
+            "avatar"
+          ],
           "additionalProperties": false,
           "properties": {
-            "user": { "type": "string" },
-            "user_projects": { "type": "string" },
-            "notifications": { "type": "string" },
-            "avatar": { "type": "string" }
+            "user": {
+              "type": "string"
+            },
+            "user_projects": {
+              "type": "string"
+            },
+            "notifications": {
+              "type": "string"
+            },
+            "avatar": {
+              "type": "string"
+            }
           }
         },
-
         "bulk": {
           "type": "object",
-          "required": ["projects", "versions", "version_files"],
+          "required": [
+            "projects",
+            "versions",
+            "version_files"
+          ],
           "additionalProperties": false,
           "properties": {
-            "projects": { "type": "string" },
-            "versions": { "type": "string" },
-            "version_files": { "type": "string" }
+            "projects": {
+              "type": "string"
+            },
+            "versions": {
+              "type": "string"
+            },
+            "version_files": {
+              "type": "string"
+            }
           }
         }
       },
       "additionalProperties": false
     }
   },
-
   "additionalProperties": false
 }
