@@ -37,6 +37,9 @@ jobs:
       - name: Build package
         run: poetry build
 
+      # -------------------------
+      # GitHub Release
+      # -------------------------
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -46,3 +49,13 @@ jobs:
           files: |
             dist/*.whl
             dist/*.tar.gz
+
+      # -------------------------
+      # Publish to PyPI
+      # -------------------------
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          poetry publish --no-interaction
