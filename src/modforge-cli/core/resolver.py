@@ -1,14 +1,14 @@
 from typing import Iterable, Set
 from collections import deque
 
-from ModForge-CLI.core.policy import ModPolicy
-from ModForge-CLI.core.models import SearchResult, ProjectVersionList, ProjectVersion
-from ModForge-CLI.api import ModrinthAPIConfig
+from modforge_cli.core.policy import ModPolicy
+from modforge_cli.core.models import SearchResult, ProjectVersionList, ProjectVersion
+from modforge_cli.api import ModrinthAPIConfig
 from requests import get
 
 
 try:
-    from ModForge-CLI.__version__ import __version__, __author__
+    from modforge_cli.__version__ import __version__, __author__
 except ImportError:
     __version__ = "unknown"
     __author__ = "Frank1o3"

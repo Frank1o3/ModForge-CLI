@@ -15,12 +15,12 @@ from rich.prompt import Confirm
 from rich.table import Table
 from rich.text import Text
 
-from ModForge-CLI.api import ModrinthAPIConfig
-from ModForge-CLI.core import Manifest, ModDownloader, SearchResult
+from modforge_cli.api import ModrinthAPIConfig
+from modforge_cli.core import Manifest, ModDownloader, SearchResult
 
 # Import version info
 try:
-    from ModForge-CLI.__version__ import __author__, __version__
+    from modforge_cli.__version__ import __author__, __version__
 except ImportError:
     __version__ = "unknown"
     __author__ = "Frank1o3"
