@@ -68,7 +68,7 @@ class ModDownloader:
         # Prioritize by version type: release > beta > alpha
         version_priority = {"release": 3, "beta": 2, "alpha": 1}
 
-        def version_score(v):
+        def version_score(v) -> int:
             vtype = v.get("version_type", "alpha")
             return version_priority.get(vtype, 0)
 
@@ -155,13 +155,12 @@ class ModDownloader:
             None,
         )
 
-        if existing_entry:
+        if existing_entry and dest.exists():
             # Verify hash matches
-            if dest.exists():
-                existing_hash = hashlib.sha1(dest.read_bytes()).hexdigest()
-                if existing_hash == primary_file["hashes"]["sha1"]:
-                    console.print(f"[dim]✓ {primary_file['filename']} (cached)[/dim]")
-                    return
+            existing_hash = hashlib.sha1(dest.read_bytes()).hexdigest()
+            if existing_hash == primary_file["hashes"]["sha1"]:
+                console.print(f"[dim]✓ {primary_file['filename']} (cached)[/dim]")
+                return
 
         # Download the file
         try:
@@ -193,7 +192,6 @@ class ModDownloader:
         file_entry = {
             "path": f"mods/{primary_file['filename']}",
             "hashes": {"sha1": sha1, "sha512": sha512},
-            "env": {"client": "required", "server": "required"},
             "downloads": [primary_file["url"]],
             "fileSize": primary_file["size"],
         }

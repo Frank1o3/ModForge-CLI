@@ -1,34 +1,34 @@
 import asyncio
 import json
-from pathlib import Path
 import shutil
-import subprocess
-import sys
-import urllib.request
+import logging
+from pathlib import Path
 
+import tempfile
+from zipfile import ZipFile, ZIP_DEFLATED
+
+import typer
 from pyfiglet import figlet_format
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm
 from rich.table import Table
 from rich.text import Text
-import typer
 
 from modforge_cli.api import ModrinthAPIConfig
+from modforge_cli.core import Manifest
+from modforge_cli.core import ModPolicy, ModResolver
 from modforge_cli.core import (
-    Manifest,
-    ModPolicy,
-    ModResolver,
-    ensure_config_file,
-    get_api_session,
-    get_manifest,
+    self_update,
     install_fabric,
-    load_registry,
+    get_manifest,
     perform_add,
+    ensure_config_file,
     run,
     save_registry_atomic,
-    self_update,
+    load_registry,
     setup_crash_logging,
+    get_api_session,
 )
 
 # Import version info
@@ -113,7 +113,6 @@ def main_callback(
 
     if verbose:
         # Enable verbose logging
-        import logging
 
         logging.basicConfig(
             level=logging.DEBUG,
@@ -132,16 +131,18 @@ def main_callback(
         render_banner()
         console.print("\n[bold yellow]Usage:[/bold yellow] ModForge-CLI [COMMAND] [ARGS]...")
         console.print("\n[bold cyan]Core Commands:[/bold cyan]")
-        console.print("  [green]setup[/green]    Initialize a new modpack project")
-        console.print("  [green]ls[/green]       List all registered projects")
-        console.print("  [green]add[/green]      Add a mod/resource/shader to manifest")
-        console.print("  [green]resolve[/green]  Resolve all dependencies")
-        console.print("  [green]build[/green]    Download files and setup loader")
-        console.print("  [green]export[/green]   Create the final .mrpack")
-        console.print("  [green]remove[/green]   Remove a modpack project")
+        console.print("  [green]setup[/green]       Initialize a new modpack project")
+        console.print("  [green]ls[/green]          List all registered projects")
+        console.print("  [green]add[/green]         Add a mod/resource/shader to manifest")
+        console.print("  [green]resolve[/green]     Resolve all dependencies")
+        console.print("  [green]build[/green]       Download files and setup loader")
+        console.print("  [green]export[/green]      Create the final .mrpack")
+        console.print("  [green]validate[/green]    Check .mrpack for issues")
+        console.print("  [green]sklauncher[/green]  Create SKLauncher profile (no .mrpack)")
+        console.print("  [green]remove[/green]      Remove a modpack project")
         console.print("\n[bold cyan]Utility:[/bold cyan]")
-        console.print("  [green]self-update[/green]  Update ModForge-CLI")
-        console.print("  [green]doctor[/green]       Validate installation")
+        console.print("  [green]self-update[/green] Update ModForge-CLI")
+        console.print("  [green]doctor[/green]      Validate installation")
         console.print("\nRun [white]ModForge-CLI --help[/white] for details.\n")
 
 
@@ -186,12 +187,13 @@ def setup(
     }
     loader_key = loader_key_map.get(loader.lower(), loader.lower())
 
+    # SKLauncher requires exact format - dependencies MUST have loader first
     index_data = {
         "formatVersion": 1,
         "game": "minecraft",
         "versionId": "1.0.0",
         "name": name,
-        "files": [],  # Will be populated during build
+        "files": [],
         "dependencies": {loader_key: loader_version, "minecraft": mc},
     }
     (pack_dir / "modrinth.index.json").write_text(json.dumps(index_data, indent=2))
@@ -352,61 +354,71 @@ def export(pack_name: str | None = None) -> None:
     if not manifest:
         raise typer.Exit(1)
 
-    loader_version = manifest.loader_version or FABRIC_LOADER_VERSION
-
     console.print("[cyan]Exporting modpack...[/cyan]")
 
     mods_dir = pack_path / "mods"
+    index_file = pack_path / "modrinth.index.json"
+
     if not mods_dir.exists() or not any(mods_dir.iterdir()):
         console.print("[red]No mods found. Run 'ModForge-CLI build' first[/red]")
         raise typer.Exit(1)
 
-    # Install loader if needed
-    if manifest.loader == "fabric":
-        installer = pack_path / ".fabric-installer.jar"
+    if not index_file.exists():
+        console.print("[red]No modrinth.index.json found[/red]")
+        raise typer.Exit(1)
 
-        if not installer.exists():
-            console.print("[yellow]Downloading Fabric installer...[/yellow]")
+    # Validate index has files
+    index_data = json.loads(index_file.read_text())
+    if not index_data.get("files"):
+        console.print("[yellow]Warning: No files registered in index[/yellow]")
+        console.print("[yellow]This might cause issues. Run 'ModForge-CLI build' again.[/yellow]")
 
-            urllib.request.urlretrieve(FABRIC_INSTALLER_URL, installer)
+    # Create .mrpack (which is just a renamed .zip)
 
-            # Verify hash (security)
-            # Note: Update FABRIC_INSTALLER_SHA256 with actual hash
-            # actual_hash = hashlib.sha256(installer.read_bytes()).hexdigest()
-            # if actual_hash != FABRIC_INSTALLER_SHA256:
-            #     console.print("[red]Installer hash mismatch![/red]")
-            #     installer.unlink()
-            #     raise typer.Exit(1)
+    # Create temp directory for packing
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
 
-        console.print("[yellow]Installing Fabric...[/yellow]")
-        try:
-            install_fabric(
-                installer=installer,
-                mc_version=manifest.minecraft,
-                loader_version=loader_version,
-                game_dir=pack_path,
-            )
-            console.print(f"[green]✓ Fabric {loader_version} installed[/green]")
-        except RuntimeError as e:
-            console.print(f"[red]{e}[/red]")
-            raise typer.Exit(1) from e
+        # Copy modrinth.index.json to root
+        import shutil
 
-        installer.unlink(missing_ok=True)
+        shutil.copy2(index_file, tmp_path / "modrinth.index.json")
 
-    # Create .mrpack
-    zip_path = pack_path.parent / f"{pack_name}.mrpack"
-    shutil.make_archive(
-        base_name=str(zip_path.with_suffix("")),
-        format="zip",
-        root_dir=pack_path,
-    )
+        # Copy overrides if they exist
+        overrides_src = pack_path / "overrides"
+        if overrides_src.exists():
+            overrides_dst = tmp_path / "overrides"
+            shutil.copytree(overrides_src, overrides_dst)
+            console.print("[green]✓ Copied overrides[/green]")
 
-    # Rename .zip to .mrpack
-    zip_file = pack_path.parent / f"{pack_name}.zip"
-    if zip_file.exists():
-        zip_file.rename(zip_path)
+        # Create .mrpack
+        mrpack_path = pack_path.parent / f"{pack_name}.mrpack"
 
-    console.print(f"[green bold]✓ Exported to {zip_path}[/green bold]")
+        with ZipFile(mrpack_path, "w", ZIP_DEFLATED) as zipf:
+            # Add modrinth.index.json at root
+            zipf.write(tmp_path / "modrinth.index.json", "modrinth.index.json")
+
+            # Add overrides folder if exists
+            if overrides_src.exists():
+                for file_path in (tmp_path / "overrides").rglob("*"):
+                    if file_path.is_file():
+                        arcname = str(file_path.relative_to(tmp_path))
+                        zipf.write(file_path, arcname)
+
+        console.print(f"[green bold]✓ Exported to {mrpack_path}[/green bold]")
+
+        # Show summary
+        file_count = len(index_data.get("files", []))
+        console.print("\n[cyan]Summary:[/cyan]")
+        console.print(f"  Files registered: {file_count}")
+        console.print(f"  Minecraft: {index_data['dependencies'].get('minecraft')}")
+
+        # Show loader
+        for loader in ["fabric-loader", "quilt-loader", "forge", "neoforge"]:
+            if loader in index_data["dependencies"]:
+                console.print(f"  Loader: {loader} {index_data['dependencies'][loader]}")
+
+        console.print("\n[dim]Import this in SKLauncher, Prism, ATLauncher, etc.[/dim]")
 
 
 @app.command()
@@ -473,6 +485,7 @@ def doctor() -> None:
     issues = []
 
     # Check Python version
+    import sys
 
     py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
     console.print(f"[green]✓[/green] Python {py_version}")
@@ -491,6 +504,8 @@ def doctor() -> None:
 
     # Check Java
     try:
+        import subprocess
+
         result = subprocess.run(["java", "-version"], capture_output=True, text=True, check=True)
         console.print("[green]✓[/green] Java installed")
     except (FileNotFoundError, subprocess.CalledProcessError):
@@ -515,6 +530,265 @@ def self_update_cmd() -> None:
     except Exception as e:
         console.print(f"[red]Update failed:[/red] {e}")
         raise typer.Exit(1) from e
+
+
+@app.command()
+def validate(mrpack_file: str | None = None) -> None:
+    """Validate .mrpack file for launcher compatibility"""
+
+    if not mrpack_file:
+        # Look for .mrpack in current directory
+        mrpacks = list(Path.cwd().glob("*.mrpack"))
+        if not mrpacks:
+            console.print("[red]No .mrpack file found in current directory[/red]")
+            console.print("[yellow]Usage: ModForge-CLI validate <file.mrpack>[/yellow]")
+            raise typer.Exit(1)
+        mrpack_path = mrpacks[0]
+    else:
+        mrpack_path = Path(mrpack_file)
+
+    if not mrpack_path.exists():
+        console.print(f"[red]File not found: {mrpack_path}[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"[cyan]Validating {mrpack_path.name}...[/cyan]\n")
+
+    import zipfile
+
+    issues = []
+    warnings = []
+
+    try:
+        with zipfile.ZipFile(mrpack_path, "r") as z:
+            files = z.namelist()
+
+            # Check for modrinth.index.json
+            if "modrinth.index.json" not in files:
+                console.print("[red]❌ CRITICAL: modrinth.index.json not found at root[/red]")
+                raise typer.Exit(1)
+
+            console.print("[green]✅ modrinth.index.json found[/green]")
+
+            # Read and validate index
+            index_data = json.loads(z.read("modrinth.index.json"))
+
+            # Check required fields
+            required = ["formatVersion", "game", "versionId", "name", "dependencies"]
+            for field in required:
+                if field not in index_data:
+                    issues.append(f"Missing required field: {field}")
+                    console.print(f"[red]❌ Missing: {field}[/red]")
+                else:
+                    value = index_data[field]
+                    if isinstance(value, dict):
+                        console.print(f"[green]✅ {field}[/green]")
+                    else:
+                        console.print(f"[green]✅ {field}: {value}[/green]")
+
+            # Check dependencies
+            deps = index_data.get("dependencies", {})
+            if "minecraft" not in deps:
+                issues.append("Missing minecraft in dependencies")
+                console.print("[red]❌ Missing: minecraft version[/red]")
+            else:
+                console.print(f"[green]✅ Minecraft: {deps['minecraft']}[/green]")
+
+            # Check for loader
+            loaders = ["fabric-loader", "quilt-loader", "forge", "neoforge"]
+            has_loader = any(l in deps for l in loaders)
+
+            if not has_loader:
+                issues.append("No mod loader in dependencies")
+                console.print("[red]❌ Missing mod loader[/red]")
+            else:
+                for loader in loaders:
+                    if loader in deps:
+                        console.print(f"[green]✅ Loader: {loader} = {deps[loader]}[/green]")
+
+            # Check files array
+            files_list = index_data.get("files", [])
+            console.print(f"\n[cyan]📦 Files registered: {len(files_list)}[/cyan]")
+
+            if len(files_list) == 0:
+                warnings.append("No files in array (pack might not work)")
+                console.print("[yellow]⚠️  WARNING: files array is empty[/yellow]")
+            else:
+                # Check first file structure
+                sample = files_list[0]
+                file_required = ["path", "hashes", "downloads", "fileSize"]
+
+                missing_fields = [f for f in file_required if f not in sample]
+                if missing_fields:
+                    issues.append(f"Files missing fields: {missing_fields}")
+                    console.print(f"[red]❌ Files missing: {', '.join(missing_fields)}[/red]")
+                else:
+                    console.print("[green]✅ File structure looks good[/green]")
+
+                # Check hashes
+                if "hashes" in sample:
+                    if "sha1" not in sample["hashes"]:
+                        issues.append("Files missing sha1 hash")
+                        console.print("[red]❌ Missing sha1 hashes[/red]")
+                    else:
+                        console.print("[green]✅ sha1 hashes present[/green]")
+
+                    if "sha512" not in sample["hashes"]:
+                        warnings.append("Files missing sha512 hash")
+                        console.print("[yellow]⚠️  Missing sha512 hashes (optional)[/yellow]")
+                    else:
+                        console.print("[green]✅ sha512 hashes present[/green]")
+
+                # Check env field
+                if "env" not in sample:
+                    warnings.append("Files missing env field")
+                    console.print("[yellow]⚠️  Missing env field (recommended)[/yellow]")
+                else:
+                    console.print("[green]✅ env field present[/green]")
+
+        # Summary
+        console.print("\n" + "=" * 60)
+
+        if issues:
+            console.print(f"\n[red bold]❌ CRITICAL ISSUES ({len(issues)}):[/red bold]")
+            for issue in issues:
+                console.print(f"  [red]• {issue}[/red]")
+
+        if warnings:
+            console.print(f"\n[yellow bold]⚠️  WARNINGS ({len(warnings)}):[/yellow bold]")
+            for warning in warnings:
+                console.print(f"  [yellow]• {warning}[/yellow]")
+
+        if not issues and not warnings:
+            console.print("\n[green bold]✅ All checks passed![/green bold]")
+            console.print("[dim]Pack should work in all Modrinth-compatible launchers[/dim]")
+        elif not issues:
+            console.print("\n[green]✅ No critical issues[/green]")
+            console.print("[dim]Pack should work, but consider addressing warnings[/dim]")
+        else:
+            console.print("\n[red bold]❌ Pack has critical issues[/red bold]")
+            console.print("[yellow]Run 'ModForge-CLI build' again to fix[/yellow]")
+            raise typer.Exit(1)
+
+    except zipfile.BadZipFile:
+        console.print("[red]❌ ERROR: Not a valid ZIP/MRPACK file[/red]")
+        raise typer.Exit(1) from e
+    except json.JSONDecodeError as e:
+        console.print("[red]❌ ERROR: Invalid JSON in modrinth.index.json[/red]")
+        console.print(f"[dim]{e}[/dim]")
+        raise typer.Exit(1) from e
+
+
+@app.command()
+def sklauncher(pack_name: str | None = None, profile_name: str | None = None) -> None:
+    """Create SKLauncher-compatible profile (alternative to export)"""
+
+    if not pack_name:
+        manifest = get_manifest(console, Path.cwd())
+        if manifest:
+            pack_name = manifest.name
+        else:
+            console.print("[red]No manifest found[/red]")
+            raise typer.Exit(1)
+
+    registry = load_registry(REGISTRY_PATH)
+    if pack_name not in registry:
+        console.print(f"[red]Pack '{pack_name}' not found[/red]")
+        raise typer.Exit(1)
+
+    pack_path = Path(registry[pack_name])
+    manifest = get_manifest(console, pack_path)
+    if not manifest:
+        raise typer.Exit(1)
+
+    # Check if mods are built
+    mods_dir = pack_path / "mods"
+    if not mods_dir.exists() or not any(mods_dir.iterdir()):
+        console.print("[red]No mods found. Run 'ModForge-CLI build' first[/red]")
+        raise typer.Exit(1)
+
+    # Get Minecraft directory
+    import platform
+
+    if platform.system() == "Windows":
+        minecraft_dir = Path.home() / "AppData" / "Roaming" / ".minecraft"
+    elif platform.system() == "Darwin":
+        minecraft_dir = Path.home() / "Library" / "Application Support" / "minecraft"
+    else:
+        minecraft_dir = Path.home() / ".minecraft"
+
+    if not minecraft_dir.exists():
+        console.print(f"[red]Minecraft directory not found: {minecraft_dir}[/red]")
+        raise typer.Exit(1)
+
+    # Use pack name if profile name not specified
+    if not profile_name:
+        profile_name = pack_name
+
+    console.print(f"[cyan]Creating SKLauncher profile '{profile_name}'...[/cyan]")
+
+    # Create instance directory
+    instance_dir = minecraft_dir / "instances" / profile_name
+    instance_dir.mkdir(parents=True, exist_ok=True)
+
+    # Copy mods
+    dst_mods = instance_dir / "mods"
+    if dst_mods.exists():
+        shutil.rmtree(dst_mods)
+    shutil.copytree(mods_dir, dst_mods)
+    mod_count = len(list(dst_mods.glob("*.jar")))
+    console.print(f"[green]✓ Copied {mod_count} mods[/green]")
+
+    # Copy overrides
+    overrides_src = pack_path / "overrides"
+    if overrides_src.exists():
+        for item in overrides_src.iterdir():
+            dst = instance_dir / item.name
+            if item.is_dir():
+                if dst.exists():
+                    shutil.rmtree(dst)
+                shutil.copytree(item, dst)
+            else:
+                shutil.copy2(item, dst)
+        console.print("[green]✓ Copied overrides[/green]")
+
+    # Update launcher_profiles.json
+    profiles_file = minecraft_dir / "launcher_profiles.json"
+
+    if profiles_file.exists():
+        profiles_data = json.loads(profiles_file.read_text())
+    else:
+        profiles_data = {"profiles": {}, "settings": {}, "version": 3}
+
+    # Create profile entry
+    from datetime import datetime
+
+    profile_id = profile_name.lower().replace(" ", "_").replace("-", "_")
+    loader_version = manifest.loader_version or FABRIC_LOADER_VERSION
+
+    profiles_data["profiles"][profile_id] = {
+        "name": profile_name,
+        "type": "custom",
+        "created": datetime.now().isoformat() + "Z",
+        "lastUsed": datetime.now().isoformat() + "Z",
+        "icon": "Furnace_On",
+        "lastVersionId": f"fabric-loader-{loader_version}-{manifest.minecraft}",
+        "gameDir": str(instance_dir),
+    }
+
+    # Save profiles
+    profiles_file.write_text(json.dumps(profiles_data, indent=2))
+
+    console.print("\n[green bold]✓ SKLauncher profile created![/green bold]")
+    console.print(f"\n[cyan]Profile:[/cyan] {profile_name}")
+    console.print(f"[cyan]Location:[/cyan] {instance_dir}")
+    console.print(f"[cyan]Version:[/cyan] fabric-loader-{loader_version}-{manifest.minecraft}")
+    console.print("\n[yellow]Next steps:[/yellow]")
+    console.print("  1. Close SKLauncher if it's open")
+    console.print("  2. Restart SKLauncher")
+    console.print(f"  3. Select profile '{profile_name}'")
+    console.print("  4. If Fabric isn't installed, install it from SKLauncher:")
+    console.print(f"     - MC: {manifest.minecraft}")
+    console.print(f"     - Fabric: {loader_version}")
 
 
 def main() -> None:
