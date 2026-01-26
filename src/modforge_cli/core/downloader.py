@@ -74,6 +74,13 @@ class ModDownloader:
         return compatible[0]
 
     async def download_all(self, project_ids: Iterable[str]) -> None:
+        """
+        Download all mods and update modrinth.index.json dependencies.
+
+        Note: Modrinth launchers auto-download mods based on dependencies.
+        We download to mods/ folder for local use, but the index only needs
+        the version IDs in dependencies, not file paths.
+        """
         tasks = [self._download_project(pid) for pid in project_ids]
 
         with Progress(
@@ -88,7 +95,34 @@ class ModDownloader:
                 await coro
                 progress.advance(task_id)
 
+        # Update dependencies section with correct loader version
+        self._update_dependencies()
         self.index_file.write_text(json.dumps(self.index, indent=2))
+
+    def _update_dependencies(self) -> None:
+        """
+        Ensure dependencies section has correct MC version and loader.
+        This is what launchers use to setup the game.
+        """
+        if "dependencies" not in self.index:
+            self.index["dependencies"] = {}
+
+        # Set Minecraft version
+        self.index["dependencies"]["minecraft"] = self.mc_version
+
+        # Set loader (fabric-loader, forge, quilt-loader, neoforge)
+        loader_key_map = {
+            "fabric": "fabric-loader",
+            "quilt": "quilt-loader",
+            "forge": "forge",
+            "neoforge": "neoforge",
+        }
+
+        loader_key = loader_key_map.get(self.loader.lower(), self.loader.lower())
+
+        # Use "*" to let launcher pick latest compatible version
+        # Or you can specify exact version if available
+        self.index["dependencies"][loader_key] = "*"
 
     async def _download_project(self, project_id: str) -> None:
         # 1. Fetch all versions for this project
@@ -134,15 +168,14 @@ class ModDownloader:
             )
             return
 
-        # 4. Download file
+        # 4. Download file to mods/ directory
         dest = self.output_dir / primary_file["filename"]
 
-        # Skip if already downloaded
+        # Skip if already downloaded and hash matches
         if dest.exists():
-            # Verify existing file hash
             existing_hash = hashlib.sha1(dest.read_bytes()).hexdigest()
             if existing_hash == primary_file["hashes"]["sha1"]:
-                console.print(f"[dim]Skipping {primary_file['filename']} (already exists)[/dim]")
+                console.print(f"[dim]✓ {primary_file['filename']} (cached)[/dim]")
                 return
             else:
                 console.print(
@@ -172,17 +205,7 @@ class ModDownloader:
                 f"  Got:      {sha1}"
             )
 
-        # 6. Register in index
-        self.index["files"].append(
-            {
-                "path": f"mods/{primary_file['filename']}",
-                "hashes": {"sha1": sha1},
-                "downloads": [primary_file["url"]],
-                "fileSize": primary_file["size"],
-            }
-        )
-
         console.print(
             f"[green]✓[/green] {primary_file['filename']} "
-            f"[dim](MC {self.mc_version}, {self.loader})[/dim]"
+            f"[dim](v{version.get('version_number')}, {self.loader})[/dim]"
         )

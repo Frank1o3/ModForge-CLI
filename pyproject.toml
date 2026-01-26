@@ -1,6 +1,6 @@
 [project]
 name = "modforge-cli"
-version = "0.1.9.2"
+version = "0.2.0"
 description = "ModForge-CLI — a Modrinth-based Minecraft modpack builder"
 authors = [{ name = "Frank1o3", email = "jahdy1o3@gmail.com" }]
 license = { text = "MIT" }

@@ -46,7 +46,7 @@ app = typer.Typer(
 console = Console()
 
 # Configuration
-FABRIC_LOADER_VERSION = "0.16.9"
+FABRIC_LOADER_VERSION = "0.18.4"
 CONFIG_PATH = Path.home() / ".config" / "ModForge-CLI"
 REGISTRY_PATH = CONFIG_PATH / "registry.json"
 MODRINTH_API = CONFIG_PATH / "modrinth_api.json"
@@ -54,6 +54,7 @@ POLICY_PATH = CONFIG_PATH / "policy.json"
 
 # Use versioned URLs to prevent breaking changes
 GITHUB_RAW = "https://raw.githubusercontent.com/Frank1o3/ModForge-CLI"
+VERSION_TAG = "v0.1.8"  # Update this with each release
 
 FABRIC_INSTALLER_URL = (
     "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.1/fabric-installer-1.1.1.jar"
@@ -62,8 +63,8 @@ FABRIC_INSTALLER_SHA256 = (
     "8fa465768bd7fc452e08c3a1e5c8a6b4b5f6a4e64bc7def47f89d8d3a6f4e7b8"  # Replace with actual hash
 )
 
-DEFAULT_MODRINTH_API_URL = f"{GITHUB_RAW}/{__version__}/configs/modrinth_api.json"
-DEFAULT_POLICY_URL = f"{GITHUB_RAW}/{__version__}/configs/policy.json"
+DEFAULT_MODRINTH_API_URL = f"{GITHUB_RAW}/{VERSION_TAG}/configs/modrinth_api.json"
+DEFAULT_POLICY_URL = f"{GITHUB_RAW}/{VERSION_TAG}/configs/policy.json"
 
 # Setup crash logging
 LOG_DIR = setup_crash_logging()
@@ -113,6 +114,7 @@ def main_callback(
 
     if verbose:
         # Enable verbose logging
+
         logging.basicConfig(
             level=logging.DEBUG,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -175,13 +177,22 @@ def setup(
     (pack_dir / "ModForge-CLI.json").write_text(manifest.model_dump_json(indent=4))
 
     # Create Modrinth index
+    # Map loader names to their dependency keys
+    loader_key_map = {
+        "fabric": "fabric-loader",
+        "quilt": "quilt-loader",
+        "forge": "forge",
+        "neoforge": "neoforge",
+    }
+    loader_key = loader_key_map.get(loader.lower(), loader.lower())
+
     index_data = {
         "formatVersion": 1,
         "game": "minecraft",
         "versionId": "1.0.0",
         "name": name,
-        "dependencies": {"minecraft": mc, loader: "*"},
-        "files": [],
+        "dependencies": {"minecraft": mc, loader_key: loader_version},
+        "files": [],  # Only for overrides, not mods
     }
     (pack_dir / "modrinth.index.json").write_text(json.dumps(index_data, indent=2))
 
@@ -265,7 +276,7 @@ def resolve(pack_name: str | None = None) -> None:
         policy=policy, api=api, mc_version=manifest.minecraft, loader=manifest.loader
     )
 
-    async def do_resolve() -> set[str]:
+    async def do_resolve():
         async with await get_api_session() as session:
             return await resolver.resolve(manifest.mods, session)
 
@@ -356,6 +367,7 @@ def export(pack_name: str | None = None) -> None:
 
         if not installer.exists():
             console.print("[yellow]Downloading Fabric installer...[/yellow]")
+            
 
             urllib.request.urlretrieve(FABRIC_INSTALLER_URL, installer)
 
@@ -375,15 +387,10 @@ def export(pack_name: str | None = None) -> None:
                 loader_version=loader_version,
                 game_dir=pack_path,
             )
+            console.print(f"[green]✓ Fabric {loader_version} installed[/green]")
         except RuntimeError as e:
             console.print(f"[red]{e}[/red]")
             raise typer.Exit(1) from e
-
-        # Update index
-        index_file = pack_path / "modrinth.index.json"
-        index = json.loads(index_file.read_text())
-        index["dependencies"]["fabric-loader"] = loader_version
-        index_file.write_text(json.dumps(index, indent=2))
 
         installer.unlink(missing_ok=True)
 
@@ -485,6 +492,7 @@ def doctor() -> None:
 
     # Check Java
     try:
+
         result = subprocess.run(["java", "-version"], capture_output=True, text=True, check=True)
         console.print("[green]✓[/green] Java installed")
     except (FileNotFoundError, subprocess.CalledProcessError):
