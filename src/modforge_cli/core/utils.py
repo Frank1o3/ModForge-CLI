@@ -33,6 +33,7 @@ def ensure_config_file(path: Path, url: str, label: str, console: Console):
         console.print(f"[red]Failed to download {label} config:[/red] {e}")
         raise typer.Exit(1)
 
+
 # --- Async Helper ---
 async def get_api_session():
     """Returns a session with the correct ModForge-CLI headers."""
@@ -51,6 +52,7 @@ def get_manifest(console: Console, path: Path = Path.cwd()) -> Optional[Manifest
     except Exception as e:
         console.print(e)
         return None
+
 
 def install_fabric(
     installer: Path,
@@ -83,6 +85,7 @@ def detect_install_method() -> str:
         return "pipx"
     return "pip"
 
+
 def self_update(console: Console):
     method = detect_install_method()
 
@@ -99,19 +102,30 @@ def self_update(console: Console):
 
     console.print("[green]ModForge-CLI updated successfully.[/green]")
 
-async def run(api:ModrinthAPIConfig, manifest:Manifest, mods_dir:Path, index_file:Path):
-        async with await get_api_session() as session:
-            downloader = ModDownloader(
-                api=api,
-                mc_version=manifest.minecraft,
-                loader=manifest.loader,
-                output_dir=mods_dir,
-                index_file=index_file,
-                session=session,
-            )
-            await downloader.download_all(manifest.mods)
 
-async def perform_add(api:ModrinthAPIConfig, name:str, manifest:Manifest, project_type:str, console: Console, manifest_file:Path):
+async def run(
+    api: ModrinthAPIConfig, manifest: Manifest, mods_dir: Path, index_file: Path
+):
+    async with await get_api_session() as session:
+        downloader = ModDownloader(
+            api=api,
+            mc_version=manifest.minecraft,
+            loader=manifest.loader,
+            output_dir=mods_dir,
+            index_file=index_file,
+            session=session,
+        )
+        await downloader.download_all(manifest.mods)
+
+
+async def perform_add(
+    api: ModrinthAPIConfig,
+    name: str,
+    manifest: Manifest,
+    project_type: str,
+    console: Console,
+    manifest_file: Path,
+):
     async with await get_api_session() as session:
         url = api.search(
             name,
@@ -128,9 +142,7 @@ async def perform_add(api:ModrinthAPIConfig, name:str, manifest:Manifest, projec
             return
 
         # Match slug
-        target_hit = next(
-            (h for h in results.hits if h.slug == name), results.hits[0]
-        )
+        target_hit = next((h for h in results.hits if h.slug == name), results.hits[0])
         slug = target_hit.slug
 
         # 3. Modify the existing manifest object

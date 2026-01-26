@@ -37,7 +37,7 @@ app = typer.Typer(
     no_args_is_help=False,  # We handle this manually in the callback for the banner
 )
 console = Console()
-FABRIC_LOADER_VERSION = "0.18.3"
+FABRIC_LOADER_VERSION = "0.18.4"
 CONFIG_PATH = Path().home() / ".config" / "ModForge-CLI"
 REGISTRY_PATH = CONFIG_PATH / "registry.json"
 MODRINTH_API = CONFIG_PATH / "modrinth_api.json"
@@ -333,7 +333,7 @@ def export(pack_name: str = "testpack"):
 
         index_file = Path.cwd() / manifest.name / "modrinth.index.json"
         index = json.loads(index_file.read_text())
-        index["dependencies"]["fabric-loader"] = FABRIC_LOADER_VERSION
+        index["dependencies"]["fabric-loader"] = loader_version
         index_file.write_text(json.dumps(index, indent=2))
 
         installer.unlink(missing_ok=True)
