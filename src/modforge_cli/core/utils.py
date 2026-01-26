@@ -159,8 +159,8 @@ def install_fabric(
             f"Fabric installation failed:\n{e.stderr}\n\n"
             f"Make sure Java is installed and accessible."
         ) from e
-    except FileNotFoundError:
-        raise RuntimeError("Java not found. Please install Java 17 or higher and try again.")
+    except FileNotFoundError as e:
+        raise RuntimeError("Java not found. Please install Java 17 or higher and try again.") from e
 
 
 def detect_install_method() -> str:
