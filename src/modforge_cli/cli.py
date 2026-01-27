@@ -1,34 +1,34 @@
 import asyncio
 import json
-import shutil
 import logging
 from pathlib import Path
-
+import shutil
+import subprocess
 import tempfile
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZIP_DEFLATED, ZipFile
 
-import typer
 from pyfiglet import figlet_format
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm
 from rich.table import Table
 from rich.text import Text
+import typer
 
 from modforge_cli.api import ModrinthAPIConfig
-from modforge_cli.core import Manifest
-from modforge_cli.core import ModPolicy, ModResolver
 from modforge_cli.core import (
-    self_update,
-    install_fabric,
-    get_manifest,
-    perform_add,
+    Manifest,
+    ModPolicy,
+    ModResolver,
     ensure_config_file,
+    get_api_session,
+    get_manifest,
+    load_registry,
+    perform_add,
     run,
     save_registry_atomic,
-    load_registry,
+    self_update,
     setup_crash_logging,
-    get_api_session,
 )
 
 # Import version info
@@ -373,8 +373,6 @@ def export(pack_name: str | None = None) -> None:
         console.print("[yellow]Warning: No files registered in index[/yellow]")
         console.print("[yellow]This might cause issues. Run 'ModForge-CLI build' again.[/yellow]")
 
-    # Create .mrpack (which is just a renamed .zip)
-
     # Create temp directory for packing
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
@@ -392,7 +390,7 @@ def export(pack_name: str | None = None) -> None:
             console.print("[green]✓ Copied overrides[/green]")
 
         # Create .mrpack
-        mrpack_path = pack_path.parent / f"{pack_name}.mrpack"
+        mrpack_path = pack_path.parent / f"{pack_name}.zip"
 
         with ZipFile(mrpack_path, "w", ZIP_DEFLATED) as zipf:
             # Add modrinth.index.json at root
@@ -504,9 +502,8 @@ def doctor() -> None:
 
     # Check Java
     try:
-        import subprocess
 
-        result = subprocess.run(["java", "-version"], capture_output=True, text=True, check=True)
+        subprocess.run(["java", "-version"], capture_output=True, text=True, check=True)
         console.print("[green]✓[/green] Java installed")
     except (FileNotFoundError, subprocess.CalledProcessError):
         console.print("[yellow]![/yellow] Java not found (needed for Fabric)")
