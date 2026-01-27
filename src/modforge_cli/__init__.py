@@ -1,3 +1,7 @@
 """
-ModForge-CLI - A CLI tool for building and managing Minecraft modpacks
+CLI package for ModForge-CLI
 """
+
+from . import main
+
+__all__ = ["main"]
