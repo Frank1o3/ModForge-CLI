@@ -73,7 +73,7 @@ def export(pack_name: str | None = None) -> None:
             console.print("[green]✓ Copied overrides[/green]")
 
         # Create .mrpack
-        mrpack_path = pack_path.parent / f"{pack_name}.mrpack"
+        mrpack_path = pack_path.parent / f"{pack_name}.zip"
 
         with ZipFile(mrpack_path, "w", ZIP_DEFLATED) as zipf:
             # Add modrinth.index.json at root
