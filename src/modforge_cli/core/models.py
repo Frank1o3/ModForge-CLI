@@ -7,21 +7,6 @@ class BaseAPIModel(BaseModel):
     model_config = {"extra": "ignore"}
 
 
-class Mod(BaseModel):
-    id: str
-    side: Literal["server", "client", "both"]
-    required: bool = False
-
-    @property
-    def is_server_side(self) -> bool:
-        return self.side == "server"
-    @property
-    def is_client_side(self) -> bool:
-        return self.side == "client"
-    @property
-    def is_both_side(self) -> bool:
-        return self.side == "both"
-
 class Manifest(BaseModel):
     name: str
     minecraft: str

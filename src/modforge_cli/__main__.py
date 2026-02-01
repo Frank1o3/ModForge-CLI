@@ -102,9 +102,6 @@ def main_callback(
         console.print("  [green]validate[/green]    Check .mrpack for issues")
         console.print("  [green]sklauncher[/green]  Create SKLauncher profile (no .mrpack)")
         console.print("  [green]remove[/green]      Remove a modpack project")
-        console.print("\n[bold cyan]Utility:[/bold cyan]")
-        console.print("  [green]self-update[/green] Update ModForge-CLI")
-        console.print("  [green]doctor[/green]      Validate installation")
         console.print("\nRun [white]ModForge-CLI --help[/white] for details.\n")
 
 
@@ -119,8 +116,6 @@ app.command()(modpack.build)
 app.command()(export.export)
 app.command()(export.validate)
 app.command()(sklauncher.sklauncher)
-app.command()(utils.doctor)
-app.command("self-update")(utils.self_update_cmd)
 
 
 def main() -> None:

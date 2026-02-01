@@ -10,5 +10,27 @@
     "python-envs.pythonProjects": [],
     "python.analysis.autoImportCompletions": true,
     "git.autofetch": "all",
-    "git.autofetchPeriod": 60
+    "git.autofetchPeriod": 60,
+    "cSpell.words": [
+        "arcname",
+        "coro",
+        "dskinlayers",
+        "excepthook",
+        "figlet",
+        "mcversion",
+        "modforge",
+        "modpack",
+        "mrpack",
+        "mrpacks",
+        "neoforge",
+        "noprofile",
+        "openloader",
+        "popleft",
+        "resourcepack",
+        "shaderpack",
+        "sklauncher",
+        "sodiumextra",
+        "vtype",
+        "zipf"
+    ]
 }
