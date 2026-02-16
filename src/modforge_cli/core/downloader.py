@@ -5,6 +5,7 @@ from collections.abc import Iterable
 import hashlib
 import json
 from pathlib import Path
+from pprint import pprint
 
 import aiohttp
 from rich.console import Console
@@ -13,6 +14,21 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from modforge_cli.api import ModrinthAPIConfig
 
 console = Console()
+
+
+def validate_filename(filename: str) -> None:
+    """
+    Validate filename to prevent directory traversal attacks.
+
+    Per Modrinth spec: "make sure this field doesn't exit the Minecraft
+    instance directory for security reasons. To do this, make sure it
+    doesn't contain .. or start with a drive name"
+    """
+    if ".." in filename:
+        raise ValueError(f"Security: filename contains '..': {filename}")
+
+    if filename.startswith(("/", "\\", "\\\\")) or (len(filename) >= 2 and filename[1] == ":"):
+        raise ValueError(f"Security: filename is absolute path: {filename}")
 
 
 class ModDownloader:
@@ -104,16 +120,19 @@ class ModDownloader:
 
     async def _download_project(self, project_id: str) -> None:
         # 1. Fetch all versions for this project
+        project_url = self.api.project(project_id)
         url = self.api.project_versions(project_id)
+        self.api.environments()
 
         try:
-            async with self.session.get(url) as r:
-                if r.status != 200:
+            async with self.session.get(url) as r, self.session.get(project_url) as rs:
+                if r.status != 200 or rs.status != 200:
                     console.print(
                         f"[red]Failed to fetch versions for {project_id}: HTTP {r.status}[/red]"
                     )
                     return
                 versions = await r.json()
+                project = await rs.json()
         except Exception as e:
             console.print(f"[red]Error fetching {project_id}: {e}[/red]")
             return
@@ -144,6 +163,13 @@ class ModDownloader:
             console.print(
                 f"[yellow]No files found for {project_id} version {version.get('version_number')}[/yellow]"
             )
+            return
+
+        # SECURITY: Validate filename
+        try:
+            validate_filename(primary_file["filename"])
+        except ValueError as e:
+            console.print(f"[red]{e}[/red]")
             return
 
         # 4. Download file to mods/ directory
@@ -188,10 +214,29 @@ class ModDownloader:
                 f"  Got:      {sha1}"
             )
 
-        # 6. Register in index (Modrinth format)
+        # 6. Extract environment info from version
+        # Per Modrinth spec, env can be: required, optional, unsupported
+        client_side = project.get("client_side", "required")
+        server_side = project.get("server_side", "required")
+
+        # Normalize values (Modrinth API uses different terms)
+        env_map = {
+            "required": "required",
+            "optional": "optional",
+            "unsupported": "unsupported",
+            "unknown": "required",  # Default to required if unknown
+        }
+
+        env = {
+            "client": env_map.get(client_side, "required"),
+            "server": env_map.get(server_side, "required"),
+        }
+
+        # 7. Register in index (Modrinth format)
         file_entry = {
             "path": f"mods/{primary_file['filename']}",
             "hashes": {"sha1": sha1, "sha512": sha512},
+            "env": env,  # NEW: Environment specification
             "downloads": [primary_file["url"]],
             "fileSize": primary_file["size"],
         }

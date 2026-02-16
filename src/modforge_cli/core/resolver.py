@@ -173,8 +173,12 @@ class ModResolver:
                     if not dep_id:
                         continue
 
-                    if dtype == "incompatible":
-                        raise RuntimeError(f"Incompatible dependency detected: {pid} ↔ {dep_id}")
+                    if dtype == "incompatible" and dep_id in resolved:
+                        resolved.remove(dep_id)
+                        print(
+                            f"Warning: Removed incompatible dependency '{dep_id}' "
+                            f"(conflicts with '{pid}') — it may have been added earlier."
+                        )
 
                     if dtype in ("required", "optional") and dep_id not in resolved:
                         resolved.add(dep_id)

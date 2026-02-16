@@ -4,8 +4,6 @@ Export and validation commands
 
 import json
 from pathlib import Path
-import shutil
-import tempfile
 import zipfile
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -21,6 +19,7 @@ app = typer.Typer()
 def export(pack_name: str | None = None) -> None:
     """Create final .mrpack file"""
 
+    # Resolve pack name
     if not pack_name:
         manifest = get_manifest(console, Path.cwd())
         if manifest:
@@ -41,65 +40,54 @@ def export(pack_name: str | None = None) -> None:
 
     console.print("[cyan]Exporting modpack...[/cyan]")
 
-    mods_dir = pack_path / "mods"
     index_file = pack_path / "modrinth.index.json"
-
-    if not mods_dir.exists() or not any(mods_dir.iterdir()):
-        console.print("[red]No mods found. Run 'ModForge-CLI build' first[/red]")
-        raise typer.Exit(1)
 
     if not index_file.exists():
         console.print("[red]No modrinth.index.json found[/red]")
         raise typer.Exit(1)
 
-    # Validate index has files
-    index_data = json.loads(index_file.read_text())
+    # Validate index JSON before export
+    try:
+        index_data = json.loads(index_file.read_text())
+    except json.JSONDecodeError as e:
+        console.print("[red]Invalid modrinth.index.json[/red]")
+        console.print(f"[dim]{e}[/dim]")
+        raise typer.Exit(1) from e
+
     if not index_data.get("files"):
         console.print("[yellow]Warning: No files registered in index[/yellow]")
-        console.print("[yellow]This might cause issues. Run 'ModForge-CLI build' again.[/yellow]")
+        console.print("[yellow]Run 'ModForge-CLI build' if this is unintended.[/yellow]")
 
-    # Create .mrpack
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
+    # Output file (.mrpack extension)
+    mrpack_path = pack_path.parent / f"{pack_name}.mrpack"
 
-        # Copy modrinth.index.json to root
-        shutil.copy2(index_file, tmp_path / "modrinth.index.json")
+    # Create archive
+    with ZipFile(mrpack_path, "w", ZIP_DEFLATED) as zipf:
+        for file_path in pack_path.rglob("*"):
+            if file_path.is_file():
+                arcname = file_path.relative_to(pack_path)
+                zipf.write(file_path, arcname)
 
-        # Copy overrides if they exist
-        overrides_src = pack_path / "overrides"
-        if overrides_src.exists():
-            overrides_dst = tmp_path / "overrides"
-            shutil.copytree(overrides_src, overrides_dst)
-            console.print("[green]✓ Copied overrides[/green]")
+    console.print(f"[green bold]✓ Exported to {mrpack_path}[/green bold]")
 
-        # Create .mrpack
-        mrpack_path = pack_path.parent / f"{pack_name}.zip"
+    # ---- Summary ----
+    file_count = len(index_data.get("files", []))
 
-        with ZipFile(mrpack_path, "w", ZIP_DEFLATED) as zipf:
-            # Add modrinth.index.json at root
-            zipf.write(tmp_path / "modrinth.index.json", "modrinth.index.json")
+    console.print("\n[cyan]Summary:[/cyan]")
+    console.print(f"  Files registered in index: {file_count}")
+    console.print(f"  Minecraft: {index_data['dependencies'].get('minecraft')}")
 
-            # Add overrides folder if exists
-            if overrides_src.exists():
-                for file_path in (tmp_path / "overrides").rglob("*"):
-                    if file_path.is_file():
-                        arcname = str(file_path.relative_to(tmp_path))
-                        zipf.write(file_path, arcname)
+    for loader in ["fabric-loader", "quilt-loader", "forge", "neoforge"]:
+        if loader in index_data["dependencies"]:
+            console.print(f"  Loader: {loader} {index_data['dependencies'][loader]}")
 
-        console.print(f"[green bold]✓ Exported to {mrpack_path}[/green bold]")
+    has_env = any("env" in f for f in index_data.get("files", []))
+    if has_env:
+        console.print("  [green]✓ Environment data included[/green]")
+    else:
+        console.print("  [yellow]⚠ No environment data (older format)[/yellow]")
 
-        # Show summary
-        file_count = len(index_data.get("files", []))
-        console.print("\n[cyan]Summary:[/cyan]")
-        console.print(f"  Files registered: {file_count}")
-        console.print(f"  Minecraft: {index_data['dependencies'].get('minecraft')}")
-
-        # Show loader
-        for loader in ["fabric-loader", "quilt-loader", "forge", "neoforge"]:
-            if loader in index_data["dependencies"]:
-                console.print(f"  Loader: {loader} {index_data['dependencies'][loader]}")
-
-        console.print("\n[dim]Import this in SKLauncher, Prism, ATLauncher, etc.[/dim]")
+    console.print("\n[dim]Import this in SKLauncher, Prism, ATLauncher, etc.[/dim]")
 
 
 @app.command()
@@ -153,6 +141,13 @@ def validate(mrpack_file: str | None = None) -> None:
                     else:
                         console.print(f"[green]✅ {field}: {value}[/green]")
 
+            # Check optional summary
+            if "summary" not in index_data:
+                warnings.append("Missing optional summary field")
+                console.print("[yellow]⚠️  Missing summary (optional but recommended)[/yellow]")
+            else:
+                console.print(f"[green]✅ summary: {index_data['summary'][:50]}...[/green]")
+
             # Check dependencies
             deps = index_data.get("dependencies", {})
             if "minecraft" not in deps:
@@ -192,6 +187,13 @@ def validate(mrpack_file: str | None = None) -> None:
                 else:
                     console.print("[green]✅ File structure looks good[/green]")
 
+                # Check path security
+                for file_entry in files_list:
+                    path = file_entry.get("path", "")
+                    if ".." in path or path.startswith(("/", "\\")):
+                        issues.append(f"Security: invalid path: {path}")
+                        console.print(f"[red]❌ SECURITY: Invalid path: {path}[/red]")
+
                 # Check hashes
                 if "hashes" in sample:
                     if "sha1" not in sample["hashes"]:
@@ -206,12 +208,31 @@ def validate(mrpack_file: str | None = None) -> None:
                     else:
                         console.print("[green]✅ sha512 hashes present[/green]")
 
-                # Check env field
+                # Check env field (NEW)
                 if "env" not in sample:
                     warnings.append("Files missing env field")
                     console.print("[yellow]⚠️  Missing env field (recommended)[/yellow]")
                 else:
-                    console.print("[green]✅ env field present[/green]")
+                    env = sample["env"]
+                    if "client" in env and "server" in env:
+                        console.print("[green]✅ env field present[/green]")
+                    else:
+                        warnings.append("env field incomplete")
+                        console.print("[yellow]⚠️  env field incomplete[/yellow]")
+
+            # Check for overrides and server-overrides
+            has_overrides = any(f.startswith("overrides/") for f in files)
+            has_server_overrides = any(f.startswith("server-overrides/") for f in files)
+
+            if has_overrides:
+                console.print("[green]✅ overrides/ folder present[/green]")
+            else:
+                console.print("[dim]No overrides/ folder (optional)[/dim]")
+
+            if has_server_overrides:
+                console.print("[green]✅ server-overrides/ folder present[/green]")
+            else:
+                console.print("[dim]No server-overrides/ folder (optional)[/dim]")
 
         # Summary
         console.print("\n" + "=" * 60)
@@ -237,10 +258,10 @@ def validate(mrpack_file: str | None = None) -> None:
             console.print("[yellow]Run 'ModForge-CLI build' again to fix[/yellow]")
             raise typer.Exit(1)
 
-    except zipfile.BadZipFile:
+    except zipfile.BadZipFile as e:
         console.print("[red]❌ ERROR: Not a valid ZIP/MRPACK file[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except json.JSONDecodeError as e:
         console.print("[red]❌ ERROR: Invalid JSON in modrinth.index.json[/red]")
         console.print(f"[dim]{e}[/dim]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
