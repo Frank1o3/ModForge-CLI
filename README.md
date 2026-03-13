@@ -35,3 +35,56 @@ poetry install
 ```bash
 pip install -r requirements.txt
 ```
+
+## Example
+
+```bash
+modforge-cli setup --loader-version 0.18.4 TestPack
+cd TestPack
+modforge-cli add sodium
+modforge-cli add "Fabric API"
+modforge-cli add "Cloth Config"
+modforge-cli add "ferriteCore"
+modforge-cli add "Entity Culling"
+modforge-cli add "Mod Menu"
+modforge-cli add "Lithium"
+modforge-cli add "ImmediatelyFast"
+modforge-cli add "yacl"
+modforge-cli add "Xaero's minimap"
+modforge-cli add "Fabric Language Kotlin"
+modforge-cli add "JEI"
+modforge-cli add "3D Skin Layers"
+modforge-cli add "More Culling"
+modforge-cli add "Zoomify"
+modforge-cli add "Mouse Tweaks"
+modforge-cli add "Sound Physics Remastered"
+modforge-cli add "LambDynamicLights"
+modforge-cli add "Krypton"
+modforge-cli add "AmbientSounds"
+modforge-cli add "BadOptimizations"
+modforge-cli add "Debugify"
+modforge-cli add "Veinminer Enchantment"
+modforge-cli add "Packet Fixer"
+modforge-cli add "CustomSkinLoader"
+modforge-cli add "Cubes Without Borders"
+modforge-cli add "Particle Rain"
+modforge-cli add "Chunky"
+modforge-cli add "Fusion (Connected Textures)"
+modforge-cli add "Do a Barrel Roll"
+modforge-cli add "Resourcify"
+modforge-cli add "Particle Core"
+modforge-cli add "Drip Sounds"
+modforge-cli add "ScalableLux"
+modforge-cli add "Cull Leaves"
+modforge-cli add "rrls"
+modforge-cli add "ModernFix-mVUS"
+modforge-cli add "NoisiumForked"
+modforge-cli add "KryptonFNP Patcher"
+modforge-cli add "Podium"
+modforge-cli add "Iris"
+modforge-cli add "first-person-model"
+modforge-cli add "Helium"
+modforge-cli resolve
+modforge-cli build
+modforge-cli export
+```

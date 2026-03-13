@@ -24,7 +24,7 @@ Defines:
 
 This schema ensures that modpacks are **predictable, reproducible, and self‑documenting**.
 
-➡️ [View Policy Schema](./schemas/policy.schema.json)
+➡️ [View Policy Schema](https://frank1o3.github.io/Schemas/smithpy/policy.schema.json)
 
 ---
 
@@ -40,7 +40,7 @@ Defines:
 
 This allows ModForge-CLI to validate API interactions at runtime and during development.
 
-➡️ [View Modrinth API Schema](./schemas/modrinth_api.schema.json)
+➡️ [View Modrinth API Schema](https://frank1o3.github.io/Schemas/smithpy/modrinth_api.schema.json)
 
 ---
 

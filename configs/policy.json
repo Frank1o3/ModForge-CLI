@@ -1,5 +1,5 @@
 {
-  "$schema": "https://frank1o3.github.io/ModForge-CLI/schemas/policy.schema.json",
+  "$schema": "https://frank1o3.github.io/Schemas/smithpy/policy.schema.json",
   "sodium": {
     "conflicts": [
       "vulkanmod",
@@ -8,7 +8,8 @@
     "sub_mods": [
       "sodium-extra",
       "reeses-sodium-options",
-      "immediatelyfast"
+      "immediatelyfast",
+      "Helium"
     ]
   },
   "podium": {
@@ -49,5 +50,11 @@
       "wavey-capes"
     ],
     "conflicts": []
+  },
+  "open-parties-and-claims": {
+    "sub_mods": [],
+    "conflicts": [
+      "vanish"
+    ]
   }
 }

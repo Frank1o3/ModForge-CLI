@@ -42,8 +42,8 @@ pip install ModForge-CLI
 ## 📚 Documentation
 
 * 📄 [Schemas Overview](./schemas.md)
-* 🧩 [Policy Schema](./schemas/policy.schema.json)
-* 🔌 [Modrinth API Schema](./schemas/modrinth_api.schema.json)
+* 🧩 [Policy Schema](https://frank1o3.github.io/Schemas/smithpy/policy.schema.json)
+* 🔌 [Modrinth API Schema](https://frank1o3.github.io/Schemas/smithpy/modrinth_api.schema.json)
 
 ---
 
