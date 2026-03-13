@@ -27,8 +27,8 @@ FABRIC_INSTALLER_URL = (
 )
 FABRIC_INSTALLER_SHA256 = "8fa465768bd7fc452e08c3a1e5c8a6b4b5f6a4e64bc7def47f89d8d3a6f4e7b8"
 
-DEFAULT_MODRINTH_API_URL = f"{GITHUB_RAW}/{VERSION_TAG}/configs/modrinth_api.json"
-DEFAULT_POLICY_URL = f"{GITHUB_RAW}/{VERSION_TAG}/configs/policy.json"
+DEFAULT_MODRINTH_API_URL = f"{GITHUB_RAW}/refs/heads/main/configs/modrinth_api.json"
+DEFAULT_POLICY_URL = f"{GITHUB_RAW}/refs/heads/main/configs/policy.json"
 
 
 def get_version_info() -> tuple[str, str]:
