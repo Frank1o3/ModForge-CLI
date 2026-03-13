@@ -180,8 +180,6 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-poetry.lock
-
 TestPack/
 TestPack/*
 TestPack.zip
