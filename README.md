@@ -27,13 +27,13 @@ Requires **Python 3.13+**.
 **Recommended (Poetry)**:
 
 ```bash
-poetry install
+poetry add modforge-cli
 ```
 
 **Alternative (pip)**:
 
 ```bash
-pip install -r requirements.txt
+pip install modforge-cli
 ```
 
 ## Example

@@ -21,13 +21,10 @@ from modforge_cli.core import (
 
 app = typer.Typer()
 
-# Initialize API
-api = ModrinthAPIConfig(MODRINTH_API)
-
-
 @app.command()
 def add(name: str, project_type: str = "mod", pack_name: str | None = None) -> None:
     """Add a project to the manifest"""
+    api = ModrinthAPIConfig(MODRINTH_API)
 
     if project_type not in ["mod", "resourcepack", "shaderpack"]:
         console.print(f"[red]Invalid type:[/red] {project_type}")
@@ -66,6 +63,7 @@ def add(name: str, project_type: str = "mod", pack_name: str | None = None) -> N
 @app.command()
 def resolve(pack_name: str | None = None) -> None:
     """Resolve all mod dependencies"""
+    api = ModrinthAPIConfig(MODRINTH_API)
 
     # Auto-detect pack
     if not pack_name:
@@ -115,6 +113,7 @@ def resolve(pack_name: str | None = None) -> None:
 @app.command()
 def build(pack_name: str | None = None) -> None:
     """Download all mods and dependencies"""
+    api = ModrinthAPIConfig(MODRINTH_API)
 
     if not pack_name:
         manifest = get_manifest(console, Path.cwd())
