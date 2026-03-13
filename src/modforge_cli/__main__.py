@@ -9,7 +9,6 @@ from rich.panel import Panel
 from rich.text import Text
 import typer
 
-from modforge_cli.cli import export, modpack, project, setup, sklauncher, utils
 from modforge_cli.cli.shared import (
     DEFAULT_MODRINTH_API_URL,
     DEFAULT_POLICY_URL,
@@ -30,13 +29,7 @@ app = typer.Typer(
 )
 
 # Setup crash logging
-
-
 LOG_DIR = setup_crash_logging()
-
-# Ensure configs exist
-ensure_config_file(MODRINTH_API, DEFAULT_MODRINTH_API_URL, "Modrinth API", console)
-ensure_config_file(POLICY_PATH, DEFAULT_POLICY_URL, "Policy", console)
 
 
 def render_banner() -> None:
@@ -75,7 +68,6 @@ def main_callback(
     """ModForge-CLI: A powerful Minecraft modpack manager for Modrinth."""
 
     if verbose:
-        # Enable verbose logging
         logging.basicConfig(
             level=logging.DEBUG,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -105,21 +97,37 @@ def main_callback(
         console.print("\nRun [white]ModForge-CLI --help[/white] for details.\n")
 
 
-# Register all command groups
-app.command()(setup.setup)
-app.add_typer(project.app, name="project", help="Project management commands")
-app.command("ls")(project.list_projects)
-app.command()(project.remove)
-app.command()(modpack.add)
-app.command()(modpack.resolve)
-app.command()(modpack.build)
-app.command()(export.export)
-app.command()(export.validate)
-app.command()(sklauncher.sklauncher)
+def register_commands() -> None:
+    """
+    Import and register CLI command modules.
+    Delayed import prevents import-time crashes.
+    """
+
+    from modforge_cli.cli import export, modpack, project, setup, sklauncher
+
+    app.command()(setup.setup)
+    app.add_typer(project.app, name="project", help="Project management commands")
+    app.command("ls")(project.list_projects)
+    app.command()(project.remove)
+    app.command()(modpack.add)
+    app.command()(modpack.resolve)
+    app.command()(modpack.build)
+    app.command()(export.export)
+    app.command()(export.validate)
+    app.command()(sklauncher.sklauncher)
 
 
 def main() -> None:
     """Main entry point"""
+
+    # Ensure configs exist BEFORE importing commands
+    ensure_config_file(MODRINTH_API, DEFAULT_MODRINTH_API_URL, "Modrinth API", console)
+    ensure_config_file(POLICY_PATH, DEFAULT_POLICY_URL, "Policy", console)
+
+    # Register CLI commands
+    register_commands()
+
+    # Run CLI
     app()
 
 
