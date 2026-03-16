@@ -80,10 +80,10 @@ modforge-cli add "rrls"
 modforge-cli add "ModernFix-mVUS"
 modforge-cli add "NoisiumForked"
 modforge-cli add "KryptonFNP Patcher"
-modforge-cli add "Podium"
 modforge-cli add "Iris"
 modforge-cli add "first-person-model"
 modforge-cli add "Helium"
+modforge-cli add "Dynamic FPS"
 modforge-cli resolve
 modforge-cli build
 modforge-cli export

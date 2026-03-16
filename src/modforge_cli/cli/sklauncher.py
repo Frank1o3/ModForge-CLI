@@ -121,5 +121,5 @@ def sklauncher(pack_name: str | None = None, profile_name: str | None = None) ->
     console.print("  2. Restart SKLauncher")
     console.print(f"  3. Select profile '{profile_name}'")
     console.print("  4. If Fabric isn't installed, install it from SKLauncher:")
-    console.print(f"     - MC: {manifest.minecraft}")
-    console.print(f"     - Fabric: {loader_version}")
+    console.print(f"    - MC: {manifest.minecraft}")
+    console.print(f"    - Fabric: {loader_version}")
