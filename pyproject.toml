@@ -1,6 +1,6 @@
 [project]
 name = "modforge-cli"
-version = "0.2.8"
+version = "0.2.9"
 description = "ModForge-CLI — a Modrinth-based Minecraft modpack builder"
 readme = "README.md"
 requires-python = ">=3.13,<3.15"

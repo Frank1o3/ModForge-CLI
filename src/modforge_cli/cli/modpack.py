@@ -61,7 +61,14 @@ def add(name: str, project_type: str = "mod", pack_name: str | None = None) -> N
 
 
 @app.command()
-def resolve(pack_name: str | None = None) -> None:
+def resolve(
+    pack_name: str | None = None,
+    include_optional: bool = typer.Option(
+        False,
+        "--include-optional",
+        help="Include optional dependencies (e.g., ViaFabric multi-version sub-mods)",
+    ),
+) -> None:
     """Resolve all mod dependencies"""
     api = ModrinthAPIConfig(MODRINTH_API)
 
@@ -87,14 +94,22 @@ def resolve(pack_name: str | None = None) -> None:
         console.print("[red]Could not load manifest[/red]")
         raise typer.Exit(1)
 
-    console.print(f"[cyan]Resolving dependencies for {pack_name}...[/cyan]")
+    if include_optional:
+        console.print(f"[cyan]Resolving dependencies for {pack_name} (including optional)...[/cyan]")
+    else:
+        console.print(f"[cyan]Resolving dependencies for {pack_name} (required only)...[/cyan]")
+        console.print("[dim]Tip: Use --include-optional to add optional dependencies[/dim]")
 
     policy = ModPolicy(POLICY_PATH)
     resolver = ModResolver(
-        policy=policy, api=api, mc_version=manifest.minecraft, loader=manifest.loader
+        policy=policy,
+        api=api,
+        mc_version=manifest.minecraft,
+        loader=manifest.loader,
+        include_optional_deps=include_optional,
     )
 
-    async def do_resolve():
+    async def do_resolve() -> set[str]:
         async with await get_api_session() as session:
             return await resolver.resolve(manifest.mods, session)
 

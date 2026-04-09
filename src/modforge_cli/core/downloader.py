@@ -69,9 +69,9 @@ class ModDownloader:
 
         def version_score(v: Any) -> tuple[int, str]:
             vtype = version_priority.get(v.get("version_type", "alpha"), 0)
-            # Use version id as proxy for date (IDs are timestamp-based)
-            vid = v.get("id", "")
-            return (vtype, vid)
+            # Use date_published for chronological ordering (ISO 8601, sortable)
+            vdate = v.get("date_published", "") or ""
+            return (vtype, str(vdate))
 
         # Filter compatible versions
         compatible = []

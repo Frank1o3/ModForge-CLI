@@ -55,6 +55,7 @@ class ProjectVersion(BaseAPIModel):
     files: list[File] = Field(default_factory=list)
     game_versions: list[str] = Field(default_factory=list)
     loaders: list[str] = Field(default_factory=list)
+    date_published: str | None = None
 
     @property
     def is_release(self) -> bool:

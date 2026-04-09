@@ -28,11 +28,13 @@ class ModResolver:
         api: ModrinthAPIConfig,
         mc_version: str,
         loader: str,
+        include_optional_deps: bool = False,
     ) -> None:
         self.policy = policy
         self.api = api
         self.mc_version = mc_version
         self.loader = loader
+        self.include_optional_deps = include_optional_deps
 
         self._headers = {"User-Agent": f"{__author__}/ModForge-CLI/{__version__}"}
 
@@ -48,8 +50,9 @@ class ModResolver:
 
         def version_score(v: ProjectVersion) -> tuple[int, str]:
             vtype = version_priority.get(v.version_type, 0)
-            # Use version id as proxy for date (IDs are timestamp-based)
-            return (vtype, v.id)
+            # Use date_published for chronological ordering (ISO 8601, sortable)
+            vdate = v.date_published or ""
+            return (vtype, vdate)
 
         # Filter compatible versions
         compatible = [
@@ -60,7 +63,7 @@ class ModResolver:
         if not compatible:
             return None
 
-        # Sort by version type (release > beta > alpha), then by ID (newest first)
+        # Sort by version type (release > beta > alpha), then by date (newest first)
         compatible.sort(key=version_score, reverse=True)
         return compatible[0]
 
@@ -231,9 +234,13 @@ class ModResolver:
                             f"(conflicts with '{pid}')[/yellow]"
                         )
 
-                    if dtype in ("required", "optional") and dep_id not in resolved:
+                    if dtype == "required" and dep_id not in resolved:
                         resolved.add(dep_id)
                         queue.append(dep_id)
+                    elif dtype == "optional" and self.include_optional_deps and dep_id not in resolved:
+                        resolved.add(dep_id)
+                        queue.append(dep_id)
+                        console.print(f"[dim]  + Optional dep added: {dep_id}[/dim]")
 
         # Report failed slugs
         if failed_slugs:

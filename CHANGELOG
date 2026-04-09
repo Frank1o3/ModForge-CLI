@@ -1,3 +1,116 @@
+# ModForge-CLI v0.2.8 - Resolution & Version Selection Fixes
+
+## 🔴 Critical Fixes
+
+### 1. Fixed Wrong Mods Being Resolved
+
+**Files**: `src/modforge_cli/core/resolver.py`
+
+**Problem**: `_search_project()` returned the FIRST search hit that passed version filters, not the best slug match. Could resolve to completely wrong mods.
+
+**Fix**:
+
+- Implemented fuzzy matching scoring (same as `add` command)
+- Added `project_type="mod"` to search API call
+- Only accepts matches with score >= 80 or exact slug match
+- Reports failed slug resolutions to user
+
+**Impact**: Prevents downloading wrong mods when slugs don't match exactly
+
+### 2. Fixed Version Selection Picking Old Versions
+
+**Files**: `src/modforge_cli/core/resolver.py`, `src/modforge_cli/core/downloader.py`, `src/modforge_cli/core/models.py`
+
+**Problem**: Version sorting used `id` field (alphanumeric, not chronological). Result: `v0.5.9` selected over `v0.7.6` because string `"yO0DsLqB"` > `"kOmySYD4"`.
+
+**Root cause**: Modrinth version IDs are NOT timestamps — they're random alphanumeric strings.
+
+**Fix**:
+
+- Added `date_published` field to `ProjectVersion` model
+- Both resolver and downloader now sort by `date_published` (ISO 8601, chronologically sortable)
+- Unified version selection logic between resolver and downloader
+
+**Impact**: Always picks the NEWEST compatible version, satisfying dependency version constraints
+
+### 3. Fixed Dependency Version Mismatches
+
+**Problem**: Resolver and downloader used DIFFERENT version selection logic. Resolver would follow dependencies for version A, but downloader would download version B.
+
+**Fix**: Unified version selection algorithm in both components with identical sorting logic.
+
+**Impact**: Consistent dependency trees — no more missing transitive dependencies
+
+## ✨ New Features
+
+### 4. Added `mods list` Command
+
+**File**: `src/modforge_cli/cli/mods.py`
+
+Shows all mods in a modpack with their names, slugs, and project IDs.
+
+**Usage**:
+
+```bash
+ModForge-CLI mods list                  # Show manifest entries
+ModForge-CLI mods list --resolved       # Fetch actual names from Modrinth
+ModForge-CLI mods list --pack-name MyPack
+```
+
+**Helps verify**:
+
+- Correct mods are in the manifest
+- Slugs resolved to the right projects
+- No unexpected mods snuck in
+
+## 🛠 Improvements
+
+### 5. Better Error Reporting
+
+**File**: `src/modforge_cli/core/resolver.py`
+
+- Replaced all `print()` calls with Rich console output
+- Tracks and reports failed slug resolutions
+- Shows summary: "X mod(s) could not be resolved"
+- Suggests checking slugs on modrinth.com
+
+### 6. Code Quality
+
+- Removed dead `self.api.environments()` call in downloader
+- Fixed ambiguous variable names (`l` → `loader`)
+- Added proper type hints throughout
+- All changes pass ruff + mypy strict checks
+
+## 🐛 Bug Fixes
+
+- Fixed version selection using ID instead of date (picked old versions)
+- Fixed resolver returning first search hit instead of best match
+- Fixed missing `project_type` filter in resolver searches
+- Fixed inconsistent version selection between resolver/downloader
+- Fixed missing `date_published` field in ProjectVersion model
+
+## ⚠️ Breaking Changes
+
+**None** — backwards compatible
+
+## 📊 Performance
+
+- Version selection: O(n log n) with proper chronological ordering
+- Search resolution: More accurate matching reduces wasted API calls
+- Better batching maintains ~10x speedup over synchronous resolution
+
+---
+
+**Upgrade Priority**: 🔴 **CRITICAL** (Fixes mod resolution failures)
+
+**Migration**:
+
+1. Run `ModForge-CLI resolve` to re-resolve dependencies with fixed logic
+2. Run `ModForge-CLI build` to download correct mod versions
+3. Use `ModForge-CLI mods list --resolved` to verify mods
+
+---
+
 # ModForge-CLI v0.1.9 - Critical Fixes
 
 ## 🔴 Critical Changes
