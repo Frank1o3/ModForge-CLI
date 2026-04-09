@@ -26,4 +26,4 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: Bearer ${{ secrets.COREOS_REPO_TOKEN }}" \
             https://api.github.com/repos/Frank1o3/CoreOS-repo/dispatches \
-            -d "{\"event_type\":\"aimbot-release\",\"client_payload\":{\"package\":\"aimbot\",\"version\":\"${VERSION}\"}}"
+            -d "{\"event_type\":\"modforge-cli\",\"client_payload\":{\"package\":\"modforge-cli\",\"version\":\"${VERSION}\"}}"
