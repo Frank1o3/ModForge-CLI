@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import quote_plus
 
 
@@ -16,14 +16,14 @@ class ModrinthAPIConfig:
     def __init__(self, config_path: str | Path = "configs/modrinth_api.json"):
         self.config_path = config_path if isinstance(config_path, Path) else Path(config_path)
         self.base_url: str = ""
-        self.endpoints: Dict[str, Any] = {}
+        self.endpoints: dict[str, Any] = {}
         self._load_config()
 
     def _load_config(self) -> None:
         if not self.config_path.exists():
             raise FileNotFoundError(f"Modrinth API config not found: {self.config_path}")
 
-        with open(self.config_path, "r", encoding="utf-8") as f:
+        with open(self.config_path, encoding="utf-8") as f:
             data = json.load(f)
 
         self.base_url = data.get("BASE_URL", "").rstrip("/")
@@ -31,7 +31,7 @@ class ModrinthAPIConfig:
             raise ValueError("BASE_URL missing in modrinth_api.json")
 
         self.endpoints = data.get("ENDPOINTS", {})
-        if not isinstance(self.endpoints, Dict):
+        if not isinstance(self.endpoints, dict):
             raise ValueError("ENDPOINTS section is invalid")
 
     def build_url(self, template: str, **kwargs: str) -> str:
@@ -46,16 +46,16 @@ class ModrinthAPIConfig:
 
     def search(
         self,
-        query: Optional[str] = None,
-        facets: Optional[List[List[str]] | str] = None,
-        categories: Optional[List[str]] = None,
-        loaders: Optional[List[str]] = None,
-        game_versions: Optional[List[str]] = None,
-        license_: Optional[str] = None,
-        project_type: Optional[str] = None,
-        offset: Optional[int] = None,
-        limit: Optional[int] = 10,
-        index: Optional[str] = "relevance",
+        query: str | None = None,
+        facets: list[list[str]] | str | None = None,
+        categories: list[str] | None = None,
+        loaders: list[str] | None = None,
+        game_versions: list[str] | None = None,
+        license_: str | None = None,
+        project_type: str | None = None,
+        offset: int | None = None,
+        limit: int | None = 10,
+        index: str | None = "relevance",
     ) -> str:
         """
         Build the Modrinth search URL with query parameters.

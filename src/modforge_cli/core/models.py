@@ -63,4 +63,4 @@ class ProjectVersion(BaseAPIModel):
 
 ProjectVersionList = TypeAdapter(list[ProjectVersion])
 
-__all__ = ["Manifest", "SearchResult", "ProjectVersion", "ProjectVersionList"]
+__all__ = ["Manifest", "ProjectVersion", "ProjectVersionList", "SearchResult"]

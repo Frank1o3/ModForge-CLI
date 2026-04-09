@@ -1,11 +1,10 @@
 [project]
 name = "modforge-cli"
-version = "0.2.7"
+version = "0.2.8"
 description = "ModForge-CLI — a Modrinth-based Minecraft modpack builder"
-authors = [{ name = "Frank1o3", email = "jahdy1o3@gmail.com" }]
-license = { text = "MIT" }
 readme = "README.md"
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.13,<3.15"
+
 dependencies = [
     "requests (>=2.32.5,<3.0.0)",
     "jsonschema (>=4.25.1,<5.0.0)",
@@ -17,18 +16,22 @@ dependencies = [
     "pyfiglet (>=1.0.4,<2.0.0)",
     "typer (>=0.21.1,<0.22.0)",
 ]
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Build Tools",
 ]
+
+[[project.authors]]
+name = "Frank1o3"
+email = "jahdy1o3@gmail.com"
+
+[project.license]
+text = "MIT"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -36,12 +39,14 @@ build-backend = "poetry.core.masonry.api"
 
 [dependency-groups]
 dev = [
+    "ruff (>=0.14.8,<0.15.0)",
+    "mypy (>=1.19.0,<2.0.0)",
+]
+types = [
     "types-requests (>=2.32.4.20250913,<3.0.0.0)",
     "types-jsonschema (>=4.25.1.20251009,<5.0.0.0)",
     "types-tqdm (>=4.67.0.20250809,<5.0.0.0)",
-    "ruff (>=0.14.8,<0.15.0)",
-    "mypy (>=1.19.0,<2.0.0)",
-    "types-colorama (>=0.4.15.20250801,<0.5.0.0)",
+    "types-colorama (>=0.4.15.20250801,<0.5.0.0)"
 ]
 
 [tool.poetry]

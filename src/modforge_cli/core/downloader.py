@@ -5,7 +5,7 @@ from collections.abc import Iterable
 import hashlib
 import json
 from pathlib import Path
-from pprint import pprint
+from typing import Any
 
 import aiohttp
 from rich.console import Console
@@ -54,43 +54,40 @@ class ModDownloader:
         if "files" not in self.index:
             self.index["files"] = []
 
-    def _select_compatible_version(self, versions: list[dict]) -> dict | None:
+    def _select_compatible_version(self, versions: list[Any]) -> Any | None:
         """
-        Select the most appropriate version based on:
-        1. Loader compatibility (fabric/forge/quilt/neoforge)
-        2. Minecraft version
-        3. Version type (prefer release > beta > alpha)
-        """
-        # Normalize loader name for comparison
-        loader_lower = self.loader.lower()
+        Select the best version for the target MC version and loader.
 
-        # Filter versions that match both MC version and loader
+        Priority:
+        1. Release versions matching MC + loader (newest first)
+        2. Any version matching MC + loader (newest first)
+
+        This matches the resolver's _select_version logic for consistency.
+        """
+        loader_lower = self.loader.lower()
+        version_priority = {"release": 3, "beta": 2, "alpha": 1}
+
+        def version_score(v: Any) -> tuple[int, str]:
+            vtype = version_priority.get(v.get("version_type", "alpha"), 0)
+            # Use version id as proxy for date (IDs are timestamp-based)
+            vid = v.get("id", "")
+            return (vtype, vid)
+
+        # Filter compatible versions
         compatible = []
         for v in versions:
-            # Check if MC version matches
             if self.mc_version not in v.get("game_versions", []):
                 continue
-
-            # Check if loader matches (case-insensitive)
-            loaders = [l.lower() for l in v.get("loaders", [])]
+            loaders = [loader.lower() for loader in v.get("loaders", [])]
             if loader_lower not in loaders:
                 continue
-
             compatible.append(v)
 
         if not compatible:
             return None
 
-        # Prioritize by version type: release > beta > alpha
-        version_priority = {"release": 3, "beta": 2, "alpha": 1}
-
-        def version_score(v) -> int:
-            vtype = v.get("version_type", "alpha")
-            return version_priority.get(vtype, 0)
-
-        # Sort by version type, then by date (newest first)
-        compatible.sort(key=lambda v: (version_score(v), v.get("date_published", "")), reverse=True)
-
+        # Sort by version type (release > beta > alpha), then by ID (newest first)
+        compatible.sort(key=version_score, reverse=True)
         return compatible[0]
 
     async def download_all(self, project_ids: Iterable[str]) -> None:
@@ -122,7 +119,6 @@ class ModDownloader:
         # 1. Fetch all versions for this project
         project_url = self.api.project(project_id)
         url = self.api.project_versions(project_id)
-        self.api.environments()
 
         try:
             async with self.session.get(url) as r, self.session.get(project_url) as rs:

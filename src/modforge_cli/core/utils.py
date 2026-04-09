@@ -65,43 +65,43 @@ def calculate_match_score(search_term: str, hit_slug: str, hit_title: str = "") 
     """
     search_lower = search_term.lower()
     search_normalized = normalize_search_term(search_term)
-    
+
     slug_lower = hit_slug.lower()
     slug_normalized = normalize_search_term(hit_slug)
-    
+
     title_lower = hit_title.lower() if hit_title else ""
     title_normalized = normalize_search_term(hit_title) if hit_title else ""
-    
+
     # Exact matches (highest priority)
     if search_term == hit_slug:
         return 100
     if search_lower == title_lower:
         return 90
-    
+
     # Normalized matches
     if search_normalized == slug_normalized:
         return 80
     if title_normalized and search_normalized == title_normalized:
         return 70
-    
+
     # Starts with matches
     if slug_lower.startswith(search_lower):
         return 60
     if title_lower and title_lower.startswith(search_lower):
         return 50
-    
+
     # Contains matches
     if search_lower in slug_lower:
         return 40
     if title_lower and search_lower in title_lower:
         return 30
-    
+
     # Normalized contains (fallback)
     if search_normalized in slug_normalized:
         return 20
     if title_normalized and search_normalized in title_normalized:
         return 10
-    
+
     return 0
 
 
@@ -114,16 +114,16 @@ def find_best_match(search_term: str, hits: list) -> tuple[object, int]:
     """
     best_hit = None
     best_score = 0
-    
+
     for hit in hits:
         # Get title from hit if available
         title = getattr(hit, 'title', '') or getattr(hit, 'name', '')
         score = calculate_match_score(search_term, hit.slug, title)
-        
+
         if score > best_score:
             best_score = score
             best_hit = hit
-    
+
     return best_hit, best_score
 
 
@@ -198,7 +198,7 @@ def load_registry(path: Path) -> dict[str, str]:
 
     try:
         return json.loads(path.read_text())
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         # Registry is corrupted - back it up and start fresh
         backup = path.with_suffix(f".corrupt-{datetime.now():%Y%m%d-%H%M%S}.json")
         shutil.copy(path, backup)
@@ -223,7 +223,7 @@ def setup_crash_logging() -> Path:
             traceback.print_exception(exc_type, exc_value, exc_traceback, file=f)
 
         console = Console()
-        console.print(f"\n[red bold]ModForge-CLI crashed![/red bold]")
+        console.print("\n[red bold]ModForge-CLI crashed![/red bold]")
         console.print(f"[yellow]Crash log saved to:[/yellow] {log_file}")
         console.print("[dim]Please include this file when reporting the issue at:")
         console.print("[dim]https://github.com/Frank1o3/ModForge-CLI/issues\n")
@@ -354,13 +354,13 @@ async def perform_add(
 
         # Find best match using scoring system
         best_hit, best_score = find_best_match(name, results.hits)
-        
+
         if not best_hit:
             console.print(f"[red]No suitable match found for '{name}'[/red]")
             return
-        
+
         slug = best_hit.slug
-        
+
         # Show what we found with confidence level
         confidence_msg = ""
         if best_score >= 80:
@@ -371,9 +371,9 @@ async def perform_add(
             confidence_msg = "[yellow](low confidence match)[/yellow]"
         else:
             confidence_msg = "[red](uncertain match - please verify)[/red]"
-        
+
         console.print(f"[cyan]Found:[/cyan] {slug} {confidence_msg}")
-        
+
         # If confidence is low and there are multiple results, show alternatives
         if best_score < 60 and len(results.hits) > 1:
             console.print("\n[yellow]Other possible matches:[/yellow]")
@@ -381,19 +381,19 @@ async def perform_add(
             table.add_column("#", style="dim", width=3)
             table.add_column("Slug", style="cyan")
             table.add_column("Score", justify="right", style="dim")
-            
+
             # Show top 5 alternatives
             scored_hits = []
             for hit in results.hits[:10]:
                 title = getattr(hit, 'title', '') or getattr(hit, 'name', '')
                 score = calculate_match_score(name, hit.slug, title)
                 scored_hits.append((hit, score))
-            
+
             scored_hits.sort(key=lambda x: x[1], reverse=True)
-            
+
             for idx, (hit, score) in enumerate(scored_hits[:5], 1):
                 table.add_row(str(idx), hit.slug, str(score))
-            
+
             console.print(table)
             console.print("\n[dim]Tip: Use the exact slug if the match is wrong[/dim]")
             console.print(f"[dim]Example: ModForge-CLI add {scored_hits[1][0].slug if len(scored_hits) > 1 else 'exact-slug'}[/dim]\n")

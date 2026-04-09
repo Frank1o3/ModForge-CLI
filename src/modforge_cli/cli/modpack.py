@@ -104,7 +104,7 @@ def resolve(pack_name: str | None = None) -> None:
         console.print(f"[red]Resolution failed:[/red] {e}")
         raise typer.Exit(1) from e
 
-    manifest.mods = sorted(list(resolved_mods))
+    manifest.mods = sorted(resolved_mods)
     manifest_file.write_text(manifest.model_dump_json(indent=4))
 
     console.print(f"[green]✓ Resolved {len(manifest.mods)} mods[/green]")

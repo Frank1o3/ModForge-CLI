@@ -103,9 +103,10 @@ def register_commands() -> None:
     Delayed import prevents import-time crashes.
     """
 
-    from modforge_cli.cli import export, modpack, project, setup, sklauncher
+    from modforge_cli.cli import export, modpack, mods, project, setup, sklauncher
 
     app.command()(setup.setup)
+    app.add_typer(mods.app, name="mods", help="Mod management commands")
     app.add_typer(project.app, name="project", help="Project management commands")
     app.command("ls")(project.list_projects)
     app.command()(project.remove)
