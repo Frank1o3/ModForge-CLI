@@ -1,20 +1,29 @@
 name: Notify CoreOS repo on release
 
 on:
-    release:
-        types: [published]
+  workflow_dispatch:
 
 jobs:
-    notify:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Extract version
-              run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
-            - name: Update PKGBUILD version and trigger build
-              run: |
-                  curl -X POST \
-                    -H "Authorization: token ${{ secrets.COREOS_REPO_TOKEN }}" \
-                    -H "Accept: application/vnd.github.v3+json" \
-                    https://api.github.com/repos/Frank1o3/CoreOS-repo/dispatches \
-                    -d "{\"event_type\": \"modforge-cli-release\", \"client_payload\": {\"version\": \"${VERSION}\", \"package\": \"modforge-cli\"}}"
+    steps:
+      - name: Get latest release version
+        id: latest_release
+        run: |
+          VERSION=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases/latest \
+            | jq -r '.tag_name | ltrimstr("v")')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Trigger CoreOS-repo package build
+        run: |
+          curl -s -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: Bearer ${{ secrets.COREOS_REPO_TOKEN }}" \
+            https://api.github.com/repos/Frank1o3/CoreOS-repo/dispatches \
+            -d "{\"event_type\":\"aimbot-release\",\"client_payload\":{\"package\":\"aimbot\",\"version\":\"${VERSION}\"}}"
